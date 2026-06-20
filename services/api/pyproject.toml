@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77.0,<83"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memoryops-api"
+version = "0.1.0"
+description = "MemoryOps AI — enterprise memory governance API (write path)"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = "MIT"
+# Exact pins (==X.Y.Z), no ranges. Rationale (per hermes-agent): a range lets
+# PyPI ship a fresh transitive at any time with no review on our side. Exact
+# pins mean a new version only reaches us via an intentional bump here. Smaller
+# dependency set = smaller blast radius for the next supply-chain attack.
+dependencies = [
+  "fastapi==0.118.0",
+  "uvicorn[standard]==0.37.0",
+  "pydantic==2.13.4",
+  "pydantic-settings==2.6.1",
+  "tenacity==9.1.4",
+  "python-dotenv==1.2.2",
+]
+
+[project.optional-dependencies]
+postgres = [
+  "sqlalchemy==2.0.36",
+  "psycopg[binary]==3.2.3",
+  "pgvector==0.3.6",
+]
+dev = [
+  "pytest==8.3.4",
+  "httpx==0.28.1",
+  "ruff==0.8.4",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

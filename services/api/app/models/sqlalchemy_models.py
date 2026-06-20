@@ -1,0 +1,86 @@
+"""SQLAlchemy ORM models for the Postgres backend.
+
+Imported lazily (only when MEMORYOPS_STORAGE=postgres) so the in-memory backend
+and tests don't require sqlalchemy/pgvector to be installed. Mirrors
+infra/db/migrations.
+"""
+
+from __future__ import annotations
+
+import uuid
+from datetime import UTC, datetime
+
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+def _uuid() -> str:
+    return str(uuid.uuid4())
+
+
+def _now() -> datetime:
+    return datetime.now(UTC)
+
+
+class MemoryRecordORM(Base):
+    __tablename__ = "memory_records"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    tenant_id: Mapped[str] = mapped_column(String, index=True)
+    user_id: Mapped[str] = mapped_column(String, index=True)
+    memory_type: Mapped[str] = mapped_column(String)
+    content: Mapped[str] = mapped_column(Text)
+    normalized_content: Mapped[str] = mapped_column(Text, default="")
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
+    importance: Mapped[int] = mapped_column(Integer, default=5)
+    confidence: Mapped[float] = mapped_column(Float, default=0.7)
+    sensitivity: Mapped[str] = mapped_column(String, default="low")
+    status: Mapped[str] = mapped_column(String, default="active", index=True)
+    source: Mapped[dict] = mapped_column(JSON)
+    extra_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
+    weight: Mapped[float] = mapped_column(Float, default=1.0)
+    reinforcement_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AuditLogORM(Base):
+    __tablename__ = "memory_audit_logs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    tenant_id: Mapped[str] = mapped_column(String, index=True)
+    user_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    memory_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    action: Mapped[str] = mapped_column(String)
+    reason: Mapped[str] = mapped_column(Text)
+    trace_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    extra_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class SettingsORM(Base):
+    __tablename__ = "memory_settings"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    tenant_id: Mapped[str] = mapped_column(String, index=True)
+    user_id: Mapped[str] = mapped_column(String, index=True)
+    memory_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    require_approval_for_sensitive: Mapped[bool] = mapped_column(Boolean, default=True)
+    temporary_chat: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

@@ -1,0 +1,36 @@
+[
+  {
+    "id": "golden-save-preference",
+    "kind": "save",
+    "message": "Remember that I prefer enterprise-style AI architecture explanations with clear phases and no emojis."
+  },
+  {
+    "id": "golden-save-project",
+    "kind": "save",
+    "message": "I'm building MemoryOps AI, an enterprise memory governance layer for a hackathon."
+  },
+  {
+    "id": "golden-pending-sensitive",
+    "kind": "pending",
+    "message": "Remember that my personal email is jane.doe@example.com for follow-ups."
+  },
+  {
+    "id": "golden-deleted-not-retrieved",
+    "kind": "deleted",
+    "save_message": "Remember that I prefer dark mode dashboards."
+  },
+  {
+    "id": "golden-temporary-no-write",
+    "kind": "temporary",
+    "message": "Remember that I like casual answers."
+  },
+  {
+    "id": "golden-tenant-isolation",
+    "kind": "isolation",
+    "tenant_id": "tenant_demo",
+    "user_id": "user_demo",
+    "other_tenant_id": "tenant_acme",
+    "other_user_id": "user_acme",
+    "other_message": "Remember that Acme's roadmap is confidential."
+  }
+]
