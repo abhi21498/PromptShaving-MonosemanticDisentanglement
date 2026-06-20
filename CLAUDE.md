@@ -47,4 +47,44 @@ docker compose up --build
 - New lifecycle actions MUST emit an audit event via `AuditService`.
 - New retrieval paths MUST go through the repository's tenant-scoped methods.
 - Keep the heuristic fallback working with no API keys; LLM adapters are optional enhancements.
-- Phase status is tracked in `docs/rollout.md`.
+- Phase status is tracked in `docs/rollout.md` and `docs/agentic-swe-kit-map.md`.
+- Do NOT add AI co-author trailers to commits.
+
+## Diagnostic (run before picking up work)
+
+From agentic-swe-kit — answer these to route the work to the right phase gate:
+
+1. New project, existing codebase, or live incident?
+2. Any AI / LLM components involved?
+3. Distributed or multi-service?
+4. Auth or sensitive data in scope?
+5. Which lifecycle phase is the project in? (see `docs/agentic-swe-kit-map.md`)
+
+## Agentic Governance Integrations
+
+Three agentic engineering integrations wrap the core. **They are not part of the
+chat request path**; they make the project safer, more reviewable, and more
+production-shaped. Overview: `docs/integrations/`.
+
+1. **Hermes operator layer** — `.hermes/skills/{memoryops-architect,
+   memoryops-release-manager,memoryops-invariant-auditor}/SKILL.md`. Operator/
+   developer skills for architecture review, release checks, and invariant audits.
+   Do not place Hermes in the API request path.
+
+2. **agentic-swe-kit phase gates** — `docs/agentic-swe-kit-map.md` +
+   `docs/phase-gates/`. Every major feature updates the relevant phase gate
+   (0 Cognitive Design, 1 System Architecture, 6 Memory Architecture, 9 Evaluation,
+   10 Observability, 11 Security, 12 Reliability, 15 Governance, 18 CI/CD for AI,
+   20 Continuous Learning).
+
+3. **PR Invariant Evidence Gate** — `scripts/pr_invariant_gate.py` +
+   `.github/workflows/pr-invariant-evidence-gate.yml`, policy in
+   `docs/ai-pr-review-policy.md`, roadmap in `docs/pr-review-agent-roadmap.md`.
+   Deterministic (no LLM call); fails when memory/policy/retrieval/deletion/
+   security/migrations/API-contract changes lack test/eval/doc/ADR evidence.
+   Reviewer domains: Security, Memory Correctness, Evaluation, Docs/ADR.
+
+   Run locally:
+   ```bash
+   python scripts/pr_invariant_gate.py --base HEAD~1 --head HEAD
+   ```

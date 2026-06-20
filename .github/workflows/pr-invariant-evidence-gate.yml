@@ -1,0 +1,119 @@
+name: PR Invariant Evidence Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: invariant-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  invariant-gate:
+    name: PR Invariant Evidence Gate
+    runs-on: ubuntu-latest
+    env:
+      REVIEW_MARKER: "<!-- memoryops-invariant-gate -->"
+      # No LLM keys: this gate is deterministic and offline.
+      OPENAI_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+      GEMINI_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install API dev deps
+        working-directory: services/api
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Unit tests
+        id: unit_tests
+        continue-on-error: true
+        working-directory: services/api
+        env:
+          MEMORYOPS_STORAGE: memory
+        run: pytest -q | tee /tmp/unit_tests.txt
+
+      - name: Eval harness (invariants)
+        id: evals
+        continue-on-error: true
+        env:
+          MEMORYOPS_STORAGE: memory
+        run: python evals/run_evals.py | tee /tmp/evals.txt
+
+      - name: Invariant evidence gate
+        id: gate
+        continue-on-error: true
+        run: |
+          python scripts/pr_invariant_gate.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" | tee /tmp/gate.txt
+
+      - name: Build evidence comment
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "$REVIEW_MARKER"
+            echo "## MemoryOps AI — PR Invariant Evidence Gate (v0.2)"
+            echo
+            echo "Deterministic, CI-only, no LLM call. Policy: docs/ai-pr-review-policy.md"
+            echo
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| Unit tests | ${{ steps.unit_tests.outcome }} |"
+            echo "| Eval harness | ${{ steps.evals.outcome }} |"
+            echo "| Invariant evidence gate | ${{ steps.gate.outcome }} |"
+            echo
+            echo "### Gate output"
+            echo '```'
+            cat /tmp/gate.txt 2>/dev/null || echo "(no output)"
+            echo '```'
+          } > /tmp/comment.md
+          cat /tmp/comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post or update PR comment
+        if: always()
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const marker = process.env.REVIEW_MARKER;
+            const body = fs.readFileSync("/tmp/comment.md", "utf8");
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.rest.issues.listComments({
+              owner, repo, issue_number, per_page: 100,
+            });
+            const previous = comments.data.find(
+              (c) => c.user.type === "Bot" && c.body.includes(marker)
+            );
+            if (previous) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: previous.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Enforce deterministic checks
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          failed="false"
+          [[ "${{ steps.unit_tests.outcome }}" != "success" ]] && { echo "Unit tests failed."; failed="true"; }
+          [[ "${{ steps.evals.outcome }}" != "success" ]] && { echo "Eval harness failed."; failed="true"; }
+          [[ "${{ steps.gate.outcome }}" != "success" ]] && { echo "Invariant evidence gate failed."; failed="true"; }
+          [[ "$failed" == "true" ]] && exit 1 || echo "All deterministic checks passed."

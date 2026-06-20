@@ -28,6 +28,119 @@ and audited — under five cross-cutting planes.
         Decay · Reflection · Conflict Resolution · Compression
 ```
 
+## Diagrams
+
+### System architecture
+
+```mermaid
+flowchart TB
+    subgraph Client["apps/web — Next.js"]
+        UI["Chat · Memory Dashboard · Admin · Architecture"]
+    end
+
+    subgraph API["services/api — FastAPI"]
+        GW["Gateway<br/>tenant/user · settings · temporary-chat guard"]
+
+        subgraph WRITE["Write path"]
+            EX["Extractor"]
+            PB["Policy Broker<br/>secrets · PII · injection · dedup"]
+            WS["Write Service<br/>embed · provenance"]
+        end
+
+        subgraph READ["Read path"]
+            RT["Retriever (hybrid)"]
+            RK["Ranker"]
+            CC["Context Composer"]
+        end
+
+        AUD["Audit Service<br/>append-only"]
+        REPO["Repository<br/>tenant-scoped · excludes deleted"]
+    end
+
+    subgraph CORE["core (cross-cutting)"]
+        CFG["config"]
+        LOG["redacting JSON logging + trace_id"]
+        REL["reliability: timeout/retry/breaker"]
+    end
+
+    subgraph DATA["Data"]
+        PG[("Postgres + pgvector")]
+        RD[("Redis")]
+        MEM[["in-memory backend (dev/tests)"]]
+    end
+
+    subgraph WORKER["services/worker"]
+        JOBS["decay · archive · conflict · reflection"]
+    end
+
+    UI -->|"/api/chat, /api/memories, /api/audit"| GW
+    GW --> EX --> PB --> WS --> REPO
+    GW --> RT --> RK --> CC --> GW
+    WS --> AUD
+    GW --> AUD
+    RT --> REPO
+    AUD --> REPO
+    REPO --> PG
+    REPO --> MEM
+    GW -. session cache .-> RD
+    WORKER --> REPO
+    API -.uses.- CORE
+
+    classDef plane fill:#0b1f3a,stroke:#5b8cff,color:#cfe0ff;
+    class CORE plane;
+```
+
+### Memory lifecycle (state machine)
+
+```mermaid
+stateDiagram-v2
+    [*] --> candidate: Extractor
+    candidate --> blocked: BLOCK (secret/injection)
+    candidate --> dropped: DROP_LOW_UTILITY
+    candidate --> pending: PENDING_APPROVAL
+    candidate --> active: SAVE
+    candidate --> active: UPDATE / MERGE (reinforce)
+
+    pending --> active: approve
+    pending --> rejected: reject
+    active --> archived: decay / archive
+    active --> deleted: delete (forget)
+
+    deleted --> [*]: never retrievable again
+    blocked --> [*]: not stored (audit only)
+    dropped --> [*]: not stored (audit only)
+```
+
+### Chat request sequence
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant GW as Gateway
+    participant R as Retriever+Ranker
+    participant P as Policy Broker
+    participant W as Write Service
+    participant A as Audit
+    participant DB as Repository
+
+    U->>GW: POST /api/chat
+    alt temporary_chat or memory disabled
+        GW->>A: temporary_chat_skipped
+        GW-->>U: answer (no read, no write)
+    else normal turn
+        GW->>R: retrieve + rank (safe_call)
+        R->>DB: active, tenant-scoped memories
+        R-->>GW: ranked used_memories
+        GW->>A: memory_retrieved
+        GW->>P: evaluate candidate(s)
+        P-->>GW: decision
+        GW->>W: commit(decision)
+        W->>DB: write (SAVE/PENDING) or none (BLOCK/DROP)
+        W->>A: memory_created / blocked / ...
+        GW-->>U: answer + used_memories + candidate decisions
+    end
+```
+
 ## Write path (Phase 1 — implemented)
 
 1. **Gateway** ([services/api/app/services/gateway.py](../services/api/app/services/gateway.py))

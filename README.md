@@ -42,6 +42,19 @@ The five verbs the system must demonstrate:
 Capture → Store → Retrieve → Update → Forget   (Governance wraps all five)
 ```
 
+```mermaid
+flowchart LR
+    M["chat message"] --> GW["Gateway"]
+    GW --> EX["Extractor"] --> PB["Policy Broker"] --> WS["Write Service"] --> ST[("Typed Store")]
+    GW --> RT["Retriever"] --> RK["Ranker"] --> CC["Context Composer"] --> RESP["Response"]
+    PB --> AUD[["Audit Log (append-only)"]]
+    WS --> AUD
+    ST -. background .-> BG["Decay · Reflection · Conflict · Compression"]
+```
+
+More diagrams (system architecture, lifecycle state machine, request sequence) are
+in [docs/architecture.md](docs/architecture.md#diagrams).
+
 ---
 
 ## Enterprise invariants
@@ -161,6 +174,31 @@ The frontend reads `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8000`).
 See [docs/rollout.md](docs/rollout.md) and the build phases in [CLAUDE.md](CLAUDE.md).
 
 ---
+
+## Agentic Engineering Layer
+
+MemoryOps AI includes an agentic engineering layer **around** the core memory
+system (never on the chat request path). It is inspired by three systems:
+
+1. **Hermes Agent** — used as an operator/developer assistant layer for release
+   checks, invariant audits, and guided project workflows. See
+   [`.hermes/skills/`](.hermes/skills/) and [docs/integrations/hermes-agent.md](docs/integrations/hermes-agent.md).
+2. **agentic-swe-kit** — used as a phase-gate framework for production engineering.
+   MemoryOps maps to lifecycle phases covering cognitive design, memory
+   architecture, evaluation, observability, security, reliability, governance,
+   CI/CD for AI, and continuous learning. See
+   [docs/agentic-swe-kit-map.md](docs/agentic-swe-kit-map.md) and
+   [docs/phase-gates/](docs/phase-gates/).
+3. **AI PR Review Agent** — the pattern behind the **PR Invariant Evidence Gate**.
+   Every PR that touches memory, policy, retrieval, deletion, security, migrations,
+   or API contracts must provide evidence (tests / evals / docs / ADRs). See
+   [scripts/pr_invariant_gate.py](scripts/pr_invariant_gate.py),
+   [.github/workflows/pr-invariant-evidence-gate.yml](.github/workflows/pr-invariant-evidence-gate.yml),
+   and [docs/ai-pr-review-policy.md](docs/ai-pr-review-policy.md).
+
+The goal: MemoryOps is not just an AI memory feature — it is a governed engineering
+system with release discipline, review gates, and operational safety. Overview:
+[docs/integrations/README.md](docs/integrations/README.md).
 
 ## Documentation
 
