@@ -30,6 +30,12 @@ wrapped by Security, Governance, Observability, Reliability, Evaluation planes.
   (`MEMORYOPS_CONTEXT_COMPRESSION=none|headroom`). `NoopCompressor` is the default;
   `HeadroomCompressor` is optional and degrades to no-op. Runs **after** policy/governance/
   composition, never before the policy broker. See ADR-007.
+- `services/api/app/llm` — provider-neutral LLM layer (v0.4). Swappable `LLMProvider`
+  (`StubProvider` default + optional OpenAI/Anthropic/Gemini), schema-validated structured
+  output, prompt registry, heuristic fallback. `MEMORYOPS_LLM_PROVIDER=stub|openai|anthropic|gemini`
+  (default `stub`). Powers structured extraction + conflict detection. LLM output is
+  **advisory** — the policy broker stays authoritative and is never bypassed; tests need
+  no API keys. See ADR-008.
 - `services/api/app/db` — repository abstraction. `MEMORYOPS_STORAGE=memory|postgres`. Vector
   retrieval goes through `Repository.search_candidates` (pgvector on Postgres, cosine in memory).
 - `infra/db/migrations` — SQL schema (Postgres + pgvector). RLS is **enforced** in

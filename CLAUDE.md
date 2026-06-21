@@ -34,6 +34,12 @@ wrapped by Security, Governance, Observability, Reliability, Evaluation planes.
   primary loops, validates state transitions, stores loop runs/events, and exposes
   `/api/loops` for operational timelines. Loop metadata must stay structured and safe:
   no raw secrets, API keys, or full user messages.
+- `services/api/app/llm` — provider-neutral LLM layer (v0.4). Swappable `LLMProvider`
+  (deterministic `StubProvider` default + optional OpenAI/Anthropic/Gemini adapters),
+  schema-validated structured output, prompt registry, and heuristic fallback. Powers
+  structured extraction + conflict detection. `MEMORYOPS_LLM_PROVIDER=stub|openai|anthropic|gemini`
+  (default `stub`). LLM output is **advisory**: the policy broker stays authoritative
+  and is never bypassed. Tests need no API keys. See ADR-008.
 - `services/api/app/db` — repository abstraction. `MEMORYOPS_STORAGE=memory|postgres`. Vector
   retrieval goes through `Repository.search_candidates` (pgvector on Postgres, cosine in memory).
 - `infra/db/migrations` — SQL schema (Postgres + pgvector). RLS is **enforced** in
@@ -92,9 +98,9 @@ production-shaped. Overview: `docs/integrations/`.
 
 2. **agentic-swe-kit phase gates** — `docs/agentic-swe-kit-map.md` +
    `docs/phase-gates/`. Every major feature updates the relevant phase gate
-   (0 Cognitive Design, 1 System Architecture, 6 Memory Architecture, 9 Evaluation,
-   10 Observability, 11 Security, 12 Reliability, 15 Governance, 18 CI/CD for AI,
-   20 Continuous Learning).
+   (0 Cognitive Design, 1 System Architecture, 5 LLM Reasoning, 6 Memory Architecture,
+   9 Evaluation, 10 Observability, 11 Security, 12 Reliability, 15 Governance,
+   18 CI/CD for AI, 20 Continuous Learning).
 
 3. **PR Invariant Evidence Gate** — `scripts/pr_invariant_gate.py` +
    `.github/workflows/pr-invariant-evidence-gate.yml`, policy in

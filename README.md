@@ -155,6 +155,28 @@ export OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 An unconfigured or failing provider degrades to the stub, and a query-embedding
 failure degrades retrieval to keyword-only (`retrieval_mode="fallback"`).
 
+### LLM provider adapters (v0.4)
+
+Extraction and conflict detection run through a provider-neutral LLM layer
+(`app/llm/`). The default is a deterministic, offline **stub** — no API key — so
+behavior is reproducible and tests never touch the network. Optional OpenAI,
+Anthropic, and Gemini adapters are used only when their key is set.
+
+```bash
+export MEMORYOPS_LLM_PROVIDER=stub          # default; deterministic, no key
+# optional real providers (used only when the key is present):
+export MEMORYOPS_LLM_PROVIDER=anthropic
+export ANTHROPIC_API_KEY=...   ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+# also: openai (OPENAI_API_KEY/OPENAI_MODEL), gemini (GEMINI_API_KEY/GEMINI_MODEL)
+export MEMORYOPS_LLM_FALLBACK_TO_HEURISTIC=true   # invalid JSON / failure → heuristic
+```
+
+LLM output is **advisory**: the deterministic policy broker runs after extraction
+and stays authoritative — a model can never override policy, and secret-like
+content is still blocked. See [docs/provider-llm-adapters.md](docs/provider-llm-adapters.md),
+[docs/structured-memory-intelligence.md](docs/structured-memory-intelligence.md),
+and [ADR-008](infra/adr/ADR-008-provider-llm-adapters.md).
+
 Verify enforced Row-Level Security against a running Postgres:
 
 ```bash
@@ -268,9 +290,20 @@ MemoryOps integrates it via an adapter and does not vendor its source.
 - **Enforced** Postgres Row-Level Security (migration `004`, `FORCE` + tenant policy + session GUC).
 - Expanded evals (semantic / keyword / archived / score-breakdown) + new tests; RLS test is DB-guarded.
 
-## What remains (v0.4+)
+## What works as of v0.4 (provider LLM adapters)
 
-- v0.4: provider LLM adapters (OpenAI/Anthropic/Gemini) + structured extraction/evaluation.
+- Provider-neutral LLM layer (`app/llm/`): deterministic `StubProvider` default +
+  optional OpenAI/Anthropic/Gemini adapters, selected by `MEMORYOPS_LLM_PROVIDER`.
+- **Structured memory intelligence**: schema-validated extraction + minimal conflict
+  detection, with prompt registry and deterministic heuristic fallback.
+- Invalid JSON / provider failure / timeout degrades to the heuristic and never
+  blocks chat; LLM output is advisory and cannot override the policy broker.
+- New observability events (`llm_provider_call`, `llm_provider_failure`,
+  `structured_output_invalid`, `llm_fallback_used`, `memory_extraction_structured`,
+  `conflict_detection_result`) + `structured`/`conflict` evals; tests need no API keys.
+
+## What remains (v0.5+)
+
 - v0.5: governance UI actions (approve/edit/archive/delete) fully wired.
 - v0.6: decay / reflection / conflict-resolution workers.
 - v0.7+: observability + economics, AI PR review runtime, deployment hardening.

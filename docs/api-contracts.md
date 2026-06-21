@@ -45,6 +45,15 @@ score = 0.35·vector_similarity + 0.20·keyword_score + 0.15·importance_score
 Changing these weights or fields requires updating this file or
 docs/architecture.md (enforced by the PR Invariant Evidence Gate).
 
+**LLM extraction (v0.4).** Candidate extraction runs through the provider-neutral
+LLM layer (`app/llm/`, ADR-008), selected by `MEMORYOPS_LLM_PROVIDER` (default
+`stub`; optional `openai`/`anthropic`/`gemini`). The `/api/chat` request/response
+shape is unchanged: LLM output is advisory and the policy broker still decides
+every `candidate_memories[].decision`. A provider failure or invalid JSON degrades
+to the deterministic heuristic. New structured log events (not response fields):
+`llm_provider_call`, `llm_provider_failure`, `structured_output_invalid`,
+`llm_fallback_used`, `memory_extraction_structured`, `conflict_detection_result`.
+
 ## GET /api/memories
 Query: `tenant_id` (req), `user_id` (req), `status` (opt), `memory_type` (opt).
 Returns `MemoryRecord[]`. Excludes `deleted` by default.

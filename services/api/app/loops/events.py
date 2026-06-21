@@ -37,7 +37,7 @@ def sanitize_loop_metadata(value: Any) -> Any:
         return [sanitize_loop_metadata(v) for v in value]
     if isinstance(value, tuple):
         return [sanitize_loop_metadata(v) for v in value]
-    if isinstance(value, (int, float, bool)) or value is None:
+    if isinstance(value, int | float | bool) or value is None:
         return value
     text = str(value)
     for pattern in _SECRET_PATTERNS:

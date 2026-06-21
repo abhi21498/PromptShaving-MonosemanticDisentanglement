@@ -46,7 +46,12 @@ class RedactingJsonFormatter(logging.Formatter):
             "message": redact_secrets(record.getMessage()),
         }
         # Attach structured extras passed via logger.info(..., extra={"event": ...}).
-        for key in ("event", "latency_ms", "memory_count", "status", "decision"):
+        # v0.4 adds LLM-layer fields (provider/task/fallback/candidate/conflict
+        # counts) so structured-intelligence events are observable (ADR-008).
+        for key in (
+            "event", "latency_ms", "memory_count", "status", "decision",
+            "provider", "task", "fallback", "candidate_count", "conflict_count", "schema",
+        ):
             if (value := getattr(record, key, None)) is not None:
                 payload[key] = value
         if record.exc_info:
