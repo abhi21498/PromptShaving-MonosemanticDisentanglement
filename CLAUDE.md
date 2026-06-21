@@ -30,7 +30,7 @@ wrapped by Security, Governance, Observability, Reliability, Evaluation planes.
   (`MEMORYOPS_CONTEXT_COMPRESSION=none|headroom`). `NoopCompressor` is the default;
   `HeadroomCompressor` is optional and degrades to no-op. Runs **after** policy/governance/
   composition, never before the policy broker. See ADR-007.
-- `services/api/app/loops` — typed loop engineering layer (v0.2.2). Defines the six
+- `services/api/app/loops` — typed loop engineering layer (v0.3.1). Defines the six
   primary loops, validates state transitions, stores loop runs/events, and exposes
   `/api/loops` for operational timelines. Loop metadata must stay structured and safe:
   no raw secrets, API keys, or full user messages.

@@ -41,3 +41,12 @@ def test_vector_search_is_tenant_and_user_scoped(gateway, repo):
     assert repo.search_candidates("tenant_demo", "user_demo", q) == []
     assert repo.search_candidates("tenant_acme", "other_user", q) == []
     assert repo.search_candidates("tenant_acme", "user_acme", q) != []
+
+
+def test_loop_runs_are_tenant_and_user_scoped(gateway, repo):
+    # The v0.3.1 loop engineering store records operational traces tagged by
+    # tenant/user; those traces must not leak across the same boundary.
+    _chat(gateway, "tenant_acme", "user_acme", "Remember Acme's roadmap is confidential.")
+    assert repo.list_loop_runs(tenant_id="tenant_acme", user_id="user_acme") != []
+    assert repo.list_loop_runs(tenant_id="tenant_demo") == []
+    assert repo.list_loop_runs(tenant_id="tenant_acme", user_id="other_user") == []

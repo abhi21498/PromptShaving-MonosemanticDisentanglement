@@ -1,4 +1,4 @@
--- 005_loop_engineering.sql — loop engineering traces (v0.2.2)
+-- 005_loop_engineering.sql — loop engineering traces (v0.3.1)
 --
 -- Loop runs/events are operational evidence, separate from governance audit logs.
 -- tenant_id/user_id are text here to match the application-facing repository

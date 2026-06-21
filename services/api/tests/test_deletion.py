@@ -43,3 +43,17 @@ def test_deleted_memory_excluded_from_vector_search(gateway, repo):
     repo.soft_delete("t1", "u1", mem.id)
     pairs = repo.search_candidates("t1", "u1", embed("dark mode dashboards"))
     assert all(m.id != mem.id for m, _ in pairs)
+
+
+def test_loop_traces_do_not_resurrect_deleted_memory(gateway, repo):
+    # v0.3.1: loop runs/events are operational evidence stored alongside the
+    # write path. They must never re-expose a soft-deleted memory in retrieval.
+    _chat(gateway, "Remember that I prefer dark mode dashboards.")
+    mem = repo.list_memories("t1", "u1")[0]
+    repo.soft_delete("t1", "u1", mem.id)
+
+    # The write loop trace still exists (operational forensics) ...
+    assert repo.list_loop_runs(tenant_id="t1", user_id="u1") != []
+    # ... but the deletion guarantee continues to hold.
+    assert mem.id not in {m.id for m in repo.retrieve_active("t1", "u1")}
+    assert mem.id not in {m.id for m in repo.list_memories("t1", "u1")}

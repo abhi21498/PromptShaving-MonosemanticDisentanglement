@@ -63,6 +63,15 @@ The most dangerous failures for an AI memory system are:
 - `memory_audit_logs` is append-only by convention (no update/delete endpoints). In production this
   is enforced with a revoked-UPDATE/DELETE grant and/or WORM storage.
 
+### Loop engineering traces (v0.3.1)
+- `loop_runs` / `loop_events` (migration `005_loop_engineering.sql`) store operational lifecycle
+  traces tagged with `tenant_id` / `user_id`; `Repository.list_loop_runs` filters by that scope so
+  traces never leak across tenants (`test_tenant_isolation.py`).
+- Loop metadata is structured and bounded — **no raw secrets, API keys, or full user messages** are
+  recorded, only state transitions, reasons, and counts.
+- Loop traces are operational evidence, not a retrieval surface: they never re-expose a
+  soft-deleted memory (`test_deletion.py::test_loop_traces_do_not_resurrect_deleted_memory`).
+
 ## Production hardening roadmap
 
 - Encryption at rest (pgcrypto / disk) + field-level encryption for high-sensitivity content.

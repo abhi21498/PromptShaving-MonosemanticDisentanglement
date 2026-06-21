@@ -4,7 +4,7 @@
 
 ## MemoryOps mapping
 
-MemoryOps v0.2.2 introduces loop engineering as a typed architecture layer.
+MemoryOps v0.3.1 introduces loop engineering as a typed architecture layer.
 The six primary loops are registered in `services/api/app/loops/registry.py`:
 `memory.write`, `memory.read`, `memory.governance`, `memory.evaluation`,
 `release.gate`, and `learning.continuous`.
@@ -27,4 +27,4 @@ The six primary loops are registered in `services/api/app/loops/registry.py`:
 - [docs/loop-engineering.md](../loop-engineering.md)
 - [docs/loop-contracts.md](../loop-contracts.md)
 
-## Status: Implemented (v0.2.2)
+## Status: Implemented (v0.3.1)

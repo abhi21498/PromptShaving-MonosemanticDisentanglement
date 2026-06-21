@@ -189,7 +189,7 @@ sequenceDiagram
   LE->>LE: completed or safe_degraded
 ```
 
-## Loop engineering layer (v0.2.2)
+## Loop engineering layer (v0.3.1)
 
 Loop engineering makes the major memory workflows explicit:
 

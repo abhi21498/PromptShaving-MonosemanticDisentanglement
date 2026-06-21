@@ -6,7 +6,7 @@
 Background worker evolves memory over time: decay ages out weights, archival
 retires low-weight memories, conflict detection finds contradictions, and
 reflection/compression (stub) collapses repeats. A `memory_feedback` table feeds
-quality signals back into ranking and evals. v0.2.2 records the worker skeleton
+quality signals back into ranking and evals. v0.3.1 records the worker skeleton
 as `learning.continuous` loop evidence.
 
 ## Gate (must be true to pass)

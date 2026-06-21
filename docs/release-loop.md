@@ -43,15 +43,15 @@ observed/executed/verified -> failed -> audited
 - Release title.
 - Manual release notes.
 
-## v0.2.2 Recommended Tag
+## v0.3.1 Recommended Tag
 
 ```bash
-git tag -a v0.2.2 <commit_hash> -m "MemoryOps AI v0.2.2 - Loop Engineering Architecture Layer"
-git push origin v0.2.2
+git tag -a v0.3.1 <commit_hash> -m "MemoryOps AI v0.3.1 - Loop Engineering Architecture Layer"
+git push origin v0.3.1
 ```
 
 GitHub release title:
 
 ```text
-MemoryOps AI v0.2.2 - Loop Engineering Architecture Layer
+MemoryOps AI v0.3.1 - Loop Engineering Architecture Layer
 ```

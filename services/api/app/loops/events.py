@@ -1,6 +1,6 @@
 """Loop run/event helpers.
 
-Async functions are the public contract requested by v0.2.2. The existing API
+Async functions are the public contract requested by v0.3.1. The existing API
 paths are synchronous, so thin sync wrappers are provided for integration.
 """
 

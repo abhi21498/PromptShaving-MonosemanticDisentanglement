@@ -1,4 +1,4 @@
-"""Registry of MemoryOps loop definitions (v0.2.2)."""
+"""Registry of MemoryOps loop definitions (v0.3.1)."""
 
 from __future__ import annotations
 

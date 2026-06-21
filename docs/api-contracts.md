@@ -75,7 +75,7 @@ Runs the invariant eval harness in-process. Returns
 - `GET /readyz` → `{ ready, storage, llm_provider, embeddings_provider, embedding_dim, detail }`
 - Every response carries an `x-trace-id` header.
 
-## Loop Engineering (v0.2.2)
+## Loop Engineering (v0.3.1)
 
 - `GET /api/loops` -> `LoopDefinition[]`
 - `GET /api/loops/{loop_id}` -> one `LoopDefinition`

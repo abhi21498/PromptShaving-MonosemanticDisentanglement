@@ -186,7 +186,7 @@ The frontend reads `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8000`).
 - Memory dashboard + admin/audit + architecture pages (frontend skeleton).
 - Invariant test suite + eval harness scaffolding.
 
-## Loop Engineering Layer (v0.2.2)
+## Loop Engineering Layer (v0.3.1)
 
 MemoryOps models memory as a set of governed loops rather than a passive store.
 

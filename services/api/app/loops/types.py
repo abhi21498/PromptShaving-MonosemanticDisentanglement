@@ -1,4 +1,4 @@
-"""Typed loop engineering contracts (v0.2.2).
+"""Typed loop engineering contracts (v0.3.1).
 
 Loop traces are operational evidence. They intentionally carry structured,
 sanitized metadata instead of raw prompts, secrets, or full memory contents.
