@@ -13,10 +13,10 @@ import time
 
 from ..compression import get_compressor
 from ..core.llm import get_llm
-from ..llm import detect_conflicts, get_llm_provider
 from ..core.logging import get_logger
 from ..core.reliability import safe_call
 from ..db.repository import Repository
+from ..llm import detect_conflicts, get_llm_provider
 from ..loops.events import complete_loop_run_sync, emit_loop_event_sync, start_loop_run_sync
 from ..loops.types import LoopId, LoopState, LoopStatus
 from ..schemas.memory import (

@@ -5,14 +5,18 @@ import { api, AuditEvent } from "@/lib/api";
 
 type Metrics = Awaited<ReturnType<typeof api.metrics>>;
 type Ready = Awaited<ReturnType<typeof api.ready>>;
+type EvalSummary = {
+  passed: number;
+  total: number;
+  pass_rate: number;
+  loop_engineering?: Record<string, string | boolean | number | null>;
+};
 
 export default function AdminPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [ready, setReady] = useState<Ready | null>(null);
   const [audit, setAudit] = useState<AuditEvent[]>([]);
-  const [evals, setEvals] = useState<{ passed: number; total: number; pass_rate: number } | null>(
-    null
-  );
+  const [evals, setEvals] = useState<EvalSummary | null>(null);
   const [error, setError] = useState("");
 
   async function load() {
@@ -61,11 +65,11 @@ export default function AdminPage() {
           <span className="chip border-emerald-600 text-emerald-400">
             evals {evals.passed}/{evals.total} passed · {(evals.pass_rate * 100).toFixed(0)}%
           </span>
-          {evals.loop_engineering && (
+          {evals.loop_engineering && Object.keys(evals.loop_engineering).length > 0 && (
             <div className="flex flex-wrap gap-2">
               {Object.entries(evals.loop_engineering).map(([loop, status]) => (
                 <span key={loop} className="chip">
-                  {loop.replace(/_/g, " ")}: {status}
+                  {loop.replace(/_/g, " ")}: {String(status)}
                 </span>
               ))}
             </div>

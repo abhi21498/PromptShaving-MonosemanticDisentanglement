@@ -36,8 +36,8 @@ from .schemas import (
     MemoryExtractionResult,
     MergeRecommendation,
 )
-from .stub_provider import StubProvider
 from .structured_output import StructuredOutputError, parse_structured
+from .stub_provider import StubProvider
 
 __all__ = [
     "ConflictDetectionResult",
