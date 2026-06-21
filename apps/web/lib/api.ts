@@ -26,11 +26,25 @@ export interface CandidateDecision {
   memory_id?: string | null;
 }
 
+export interface ScoreBreakdown {
+  vector_similarity: number;
+  keyword_score: number;
+  importance_score: number;
+  confidence: number;
+  recency: number;
+  reinforcement: number;
+}
+
+export type RetrievalMode = "hybrid" | "fallback" | "none";
+
 export interface UsedMemory {
   memory_id: string;
   content: string;
+  memory_type?: string;
   score: number;
+  score_breakdown?: Partial<ScoreBreakdown>;
   reason: string;
+  source?: { kind: string; excerpt: string };
 }
 
 export interface ChatResponse {
@@ -39,6 +53,7 @@ export interface ChatResponse {
   candidate_memories: CandidateDecision[];
   audit_event_ids: string[];
   temporary_chat: boolean;
+  retrieval_mode?: RetrievalMode;
   trace_id: string;
 }
 
@@ -122,4 +137,14 @@ export const api = {
       "/api/evals/run",
       { method: "POST" }
     ),
+
+  ready: () =>
+    http<{
+      ready: boolean;
+      storage: string;
+      llm_provider: string;
+      embeddings_provider: string;
+      embedding_dim: number;
+      detail: string;
+    }>("/readyz"),
 };

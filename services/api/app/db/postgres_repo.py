@@ -6,9 +6,11 @@ only when MEMORYOPS_STORAGE=postgres.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from ..core.config import get_settings
@@ -57,11 +59,28 @@ class PostgresRepository(Repository):
         # Migrations own the canonical schema; create_all is a dev convenience.
         Base.metadata.create_all(self._engine)
 
+    @contextmanager
+    def _scoped(self, tenant_id: str, user_id: str = "") -> Iterator[Session]:
+        """Open a session with the per-request RLS context set.
+
+        Sets ``app.tenant_id`` (and ``app.user_id``) as transaction-local GUCs so
+        the Row-Level Security policies in migration 004 enforce tenant isolation
+        at the database, not just in application code (defense in depth).
+        """
+        with self._Session() as s:
+            s.execute(
+                text("select set_config('app.tenant_id', :t, true)"), {"t": tenant_id or ""}
+            )
+            s.execute(
+                text("select set_config('app.user_id', :u, true)"), {"u": user_id or ""}
+            )
+            yield s
+
     # ── memory ───────────────────────────────────────────────────────────────
     def create_memory(self, memory: StoredMemory) -> StoredMemory:
         if not memory.source:
             raise ValueError("memory.source (provenance) is required")
-        with self._Session() as s:
+        with self._scoped(memory.tenant_id, memory.user_id) as s:
             row = MemoryRecordORM(
                 id=memory.id,
                 tenant_id=memory.tenant_id,
@@ -84,7 +103,7 @@ class PostgresRepository(Repository):
             return _to_stored(row)
 
     def get_memory(self, tenant_id: str, user_id: str, memory_id: str) -> StoredMemory | None:
-        with self._Session() as s:
+        with self._scoped(tenant_id, user_id) as s:
             row = s.get(MemoryRecordORM, memory_id)
             if row and row.tenant_id == tenant_id and row.user_id == user_id:
                 return _to_stored(row)
@@ -99,7 +118,7 @@ class PostgresRepository(Repository):
         memory_type: str | None = None,
         include_deleted: bool = False,
     ) -> list[StoredMemory]:
-        with self._Session() as s:
+        with self._scoped(tenant_id, user_id) as s:
             stmt = select(MemoryRecordORM).where(
                 MemoryRecordORM.tenant_id == tenant_id,
                 MemoryRecordORM.user_id == user_id,
@@ -114,7 +133,7 @@ class PostgresRepository(Repository):
             return [_to_stored(r) for r in s.scalars(stmt)]
 
     def update_memory(self, memory: StoredMemory) -> StoredMemory:
-        with self._Session() as s:
+        with self._scoped(memory.tenant_id, memory.user_id) as s:
             row = s.get(MemoryRecordORM, memory.id)
             if not row:
                 raise ValueError("memory not found")
@@ -130,7 +149,7 @@ class PostgresRepository(Repository):
             return _to_stored(row)
 
     def soft_delete(self, tenant_id: str, user_id: str, memory_id: str) -> StoredMemory | None:
-        with self._Session() as s:
+        with self._scoped(tenant_id, user_id) as s:
             row = s.get(MemoryRecordORM, memory_id)
             if not row or row.tenant_id != tenant_id or row.user_id != user_id:
                 return None
@@ -144,7 +163,7 @@ class PostgresRepository(Repository):
     def find_similar_active(
         self, tenant_id: str, user_id: str, content: str
     ) -> StoredMemory | None:
-        with self._Session() as s:
+        with self._scoped(tenant_id, user_id) as s:
             stmt = select(MemoryRecordORM).where(
                 MemoryRecordORM.tenant_id == tenant_id,
                 MemoryRecordORM.user_id == user_id,
@@ -157,9 +176,41 @@ class PostgresRepository(Repository):
     def retrieve_active(self, tenant_id: str, user_id: str) -> list[StoredMemory]:
         return self.list_memories(tenant_id, user_id, status=_ACTIVE)
 
+    def search_candidates(
+        self,
+        tenant_id: str,
+        user_id: str,
+        query_embedding: list[float],
+        *,
+        limit: int = 50,
+    ) -> list[tuple[StoredMemory, float]]:
+        with self._scoped(tenant_id, user_id) as s:
+            base = select(MemoryRecordORM).where(
+                MemoryRecordORM.tenant_id == tenant_id,
+                MemoryRecordORM.user_id == user_id,
+                MemoryRecordORM.status == _ACTIVE,
+                MemoryRecordORM.deleted_at.is_(None),
+            )
+            if not query_embedding:
+                # Embedding failure → return active rows; caller degrades to keyword.
+                rows = s.scalars(base.limit(limit))
+                return [(_to_stored(r), 0.0) for r in rows]
+            # Real pgvector cosine search: 1 - cosine_distance = cosine similarity.
+            distance = MemoryRecordORM.embedding.cosine_distance(query_embedding)
+            stmt = (
+                base.where(MemoryRecordORM.embedding.is_not(None))
+                .add_columns((1 - distance).label("similarity"))
+                .order_by(distance)
+                .limit(limit)
+            )
+            out: list[tuple[StoredMemory, float]] = []
+            for row, similarity in s.execute(stmt):
+                out.append((_to_stored(row), float(similarity)))
+            return out
+
     # ── audit ────────────────────────────────────────────────────────────────
     def add_audit(self, event: StoredAudit) -> StoredAudit:
-        with self._Session() as s:
+        with self._scoped(event.tenant_id, event.user_id or "") as s:
             row = AuditLogORM(
                 id=event.id,
                 tenant_id=event.tenant_id,
@@ -177,7 +228,7 @@ class PostgresRepository(Repository):
     def list_audit(
         self, tenant_id: str, user_id: str | None = None, limit: int = 200
     ) -> list[StoredAudit]:
-        with self._Session() as s:
+        with self._scoped(tenant_id, user_id or "") as s:
             stmt = select(AuditLogORM).where(AuditLogORM.tenant_id == tenant_id)
             if user_id:
                 stmt = stmt.where(AuditLogORM.user_id == user_id)
@@ -199,7 +250,7 @@ class PostgresRepository(Repository):
 
     # ── settings ─────────────────────────────────────────────────────────────
     def get_settings(self, tenant_id: str, user_id: str) -> StoredSettings:
-        with self._Session() as s:
+        with self._scoped(tenant_id, user_id) as s:
             stmt = select(SettingsORM).where(
                 SettingsORM.tenant_id == tenant_id, SettingsORM.user_id == user_id
             )
@@ -215,7 +266,7 @@ class PostgresRepository(Repository):
             )
 
     def upsert_settings(self, settings: StoredSettings) -> StoredSettings:
-        with self._Session() as s:
+        with self._scoped(settings.tenant_id, settings.user_id) as s:
             stmt = select(SettingsORM).where(
                 SettingsORM.tenant_id == settings.tenant_id,
                 SettingsORM.user_id == settings.user_id,
@@ -233,7 +284,7 @@ class PostgresRepository(Repository):
 
     # ── metrics ──────────────────────────────────────────────────────────────
     def metrics(self, tenant_id: str) -> dict:
-        with self._Session() as s:
+        with self._scoped(tenant_id) as s:
             mems = list(
                 s.scalars(
                     select(MemoryRecordORM).where(MemoryRecordORM.tenant_id == tenant_id)

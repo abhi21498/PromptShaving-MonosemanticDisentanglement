@@ -30,3 +30,14 @@ def test_get_memory_is_tenant_scoped(gateway, repo):
     assert repo.get_memory("t1", "alice", mem_id) is not None
     assert repo.get_memory("t1", "bob", mem_id) is None
     assert repo.get_memory("t2", "alice", mem_id) is None
+
+
+def test_vector_search_is_tenant_and_user_scoped(gateway, repo):
+    # The v0.3 vector candidate path must enforce isolation at the source.
+    from app.embeddings import embed
+
+    _chat(gateway, "tenant_acme", "user_acme", "Remember Acme's roadmap is confidential.")
+    q = embed("roadmap")
+    assert repo.search_candidates("tenant_demo", "user_demo", q) == []
+    assert repo.search_candidates("tenant_acme", "other_user", q) == []
+    assert repo.search_candidates("tenant_acme", "user_acme", q) != []

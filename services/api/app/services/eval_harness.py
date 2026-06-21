@@ -10,6 +10,9 @@ tenant data. Case types map to invariants:
   deleted     — a deleted memory must not be retrievable
   isolation   — another tenant's memory must not be retrievable
   temporary   — temporary chat must not write or retrieve
+  archived    — an archived memory must not be retrieved (unless asked)
+  retrieve    — a saved memory must be retrieved for a related query (semantic/keyword)
+  breakdown   — retrieval results must carry a full score breakdown
 """
 
 from __future__ import annotations
@@ -139,6 +142,42 @@ def _run_case(gw: Gateway, repo: InMemoryRepository, case: dict) -> CaseResult:
         leaked = repo.retrieve_active(tenant, user)
         ok = len(leaked) == 0
         return CaseResult(cid, kind, ok, f"leaked_rows={len(leaked)}")
+
+    if kind == "archived":
+        save_msg = case.get("save_message", msg)
+        _decisions_for(gw, tenant, user, save_msg)
+        row = repo.list_memories(tenant, user)[0]
+        row.status = Status.archived
+        repo.update_memory(row)
+        resp = _decisions_for(gw, tenant, user, case.get("query", save_msg))
+        ok = all(u.memory_id != row.id for u in resp.used_memories)
+        return CaseResult(cid, kind, ok, f"archived_in_used={not ok}")
+
+    if kind == "retrieve":
+        save_msg = case["save_message"]
+        query = case["query"]
+        expect = case.get("expect_substring", "").lower()
+        _decisions_for(gw, tenant, user, save_msg)
+        resp = _decisions_for(gw, tenant, user, query)
+        contents = " ".join(u.content.lower() for u in resp.used_memories)
+        ok = bool(resp.used_memories) and (expect in contents if expect else True)
+        return CaseResult(
+            cid, kind, ok, f"used={len(resp.used_memories)} mode={resp.retrieval_mode}"
+        )
+
+    if kind == "breakdown":
+        save_msg = case["save_message"]
+        query = case["query"]
+        _decisions_for(gw, tenant, user, save_msg)
+        resp = _decisions_for(gw, tenant, user, query)
+        required = {
+            "vector_similarity", "keyword_score", "importance_score",
+            "confidence", "recency", "reinforcement",
+        }
+        ok = bool(resp.used_memories) and all(
+            required <= set(u.score_breakdown) for u in resp.used_memories
+        )
+        return CaseResult(cid, kind, ok, f"used={len(resp.used_memories)} keys_ok={ok}")
 
     return CaseResult(cid, kind, False, f"unknown case kind: {kind}")
 

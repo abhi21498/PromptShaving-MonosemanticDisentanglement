@@ -17,12 +17,31 @@ Request:
 Response:
 ```json
 { "assistant_message": "...",
-  "used_memories": [{ "memory_id": "...", "content": "...", "score": 0.42, "reason": "..." }],
+  "used_memories": [{ "memory_id": "...", "content": "...", "memory_type": "preference",
+    "score": 0.42, "reason": "...",
+    "score_breakdown": { "vector_similarity": 0.84, "keyword_score": 0.50,
+      "importance_score": 0.60, "confidence": 0.92, "recency": 0.99, "reinforcement": 0.0 },
+    "source": { "kind": "chat", "excerpt": "..." } }],
   "candidate_memories": [{ "content": "...", "decision": "SAVE", "type": "procedural",
     "confidence": 0.92, "importance": 8, "sensitivity": "low", "reason": "...", "memory_id": "..." }],
-  "audit_event_ids": ["..."], "temporary_chat": false, "trace_id": "..." }
+  "audit_event_ids": ["..."], "temporary_chat": false,
+  "retrieval_mode": "hybrid", "trace_id": "..." }
 ```
 `decision ∈ {SAVE, PENDING_APPROVAL, BLOCK, DROP_LOW_UTILITY, UPDATE_EXISTING, MERGE_WITH_EXISTING}`.
+
+**Retrieval (v0.3).** `retrieval_mode ∈ {hybrid, fallback, none}` — `hybrid` blends
+pgvector cosine similarity with keyword overlap; `fallback` is keyword-only after
+an embedding failure (graceful degradation, invariant #4); `none` when memory was
+bypassed (temporary chat / memory disabled). `score_breakdown` reports the raw,
+normalized [0,1] component signals behind `score`, which is their weighted sum:
+
+```text
+score = 0.35·vector_similarity + 0.20·keyword_score + 0.15·importance_score
+      + 0.10·confidence + 0.10·recency + 0.10·reinforcement
+```
+
+Changing these weights or fields requires updating this file or
+docs/architecture.md (enforced by the PR Invariant Evidence Gate).
 
 ## GET /api/memories
 Query: `tenant_id` (req), `user_id` (req), `status` (opt), `memory_type` (opt).
@@ -51,5 +70,5 @@ Runs the invariant eval harness in-process. Returns
 
 ## Ops
 - `GET /healthz` → `{ status, version }`
-- `GET /readyz` → `{ ready, storage, llm_provider, detail }`
+- `GET /readyz` → `{ ready, storage, llm_provider, embeddings_provider, embedding_dim, detail }`
 - Every response carries an `x-trace-id` header.

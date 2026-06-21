@@ -12,17 +12,18 @@ keyword overlap, blended by the ranker.
 - Memory types are enumerated and treated differently.
 - Retrieval is hybrid and tenant/user/status-filtered.
 - Deleted and pending memories are never retrievable.
-- Embedding generation degrades gracefully (heuristic fallback).
+- Embedding generation degrades gracefully (stub fallback; keyword-only on failure).
+- Retrieval results carry an explainable `score_breakdown` and a `retrieval_mode`.
 
 ## Evidence
+- `services/api/app/embeddings/` (provider interface + stub + OpenAI)
+- `services/api/app/db/repository.py::search_candidates` (pgvector + in-memory)
 - `services/api/app/services/{retriever,ranker,context_composer}.py`
-- `services/api/app/core/embeddings.py`
-- `services/api/tests/test_retrieval.py`
-- [ADR-002 retrieval](../../infra/adr/ADR-002-retrieval.md)
+- `services/api/tests/{test_retrieval,test_hybrid_retrieval,test_pgvector_retrieval,test_retrieval_degradation,test_embeddings}.py`
+- [ADR-002 retrieval](../../infra/adr/ADR-002-retrieval.md), [ADR-006 pgvector/RLS](../../infra/adr/ADR-006-pgvector-rls-retrieval.md)
 
-## Gaps to close (→ v0.3)
-- Real provider embeddings; pgvector ANN query in the retriever (currently
-  in-process cosine).
+## Gaps to close (→ v0.4+)
 - Working/session memory tier in Redis.
+- Learned reranker; provider extraction/evaluation (v0.4).
 
-## Status: 🟡 Scaffolded (hybrid logic present; provider embeddings pending)
+## Status: ✅ Implemented (v0.3 — provider embeddings, pgvector retrieval, hybrid + score breakdown)

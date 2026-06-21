@@ -52,8 +52,38 @@ RULES: list[Rule] = [
         "Memory Correctness",
         "retrieval-eval",
         r"^services/api/app/services/(retriever|ranker|context_composer)\.py$",
-        r"^(services/api/tests/test_retrieval\.py$|evals/)",
+        r"^(services/api/tests/test_(retrieval|hybrid_retrieval|retrieval_degradation)\.py$"
+        r"|evals/)",
         "Retrieval/ranking changed without a retrieval-test or eval update.",
+    ),
+    Rule(
+        "Memory Correctness",
+        "embeddings-tests",
+        r"^services/api/app/embeddings/|^services/api/app/core/embeddings\.py$",
+        r"^services/api/tests/test_embeddings\.py$",
+        "Embedding provider changed without updating tests/test_embeddings.py.",
+    ),
+    Rule(
+        "Memory Correctness",
+        "score-formula-docs",
+        r"^services/api/app/services/ranker\.py$",
+        r"^(docs/api-contracts\.md$|docs/architecture\.md$)",
+        "Ranking/score formula changed without updating docs/api-contracts.md or "
+        "docs/architecture.md.",
+    ),
+    Rule(
+        "Security",
+        "rls-migration-test",
+        r"^infra/db/migrations/.*rls.*\.sql$",
+        r"^services/api/tests/test_rls\.py$",
+        "RLS migration changed without updating tests/test_rls.py.",
+    ),
+    Rule(
+        "Security",
+        "rls-migration-docs",
+        r"^infra/db/migrations/.*rls.*\.sql$",
+        r"^docs/security\.md$",
+        "RLS migration changed without updating docs/security.md.",
     ),
     Rule(
         "Memory Correctness",

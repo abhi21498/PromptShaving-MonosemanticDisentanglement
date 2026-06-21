@@ -22,13 +22,18 @@ wrapped by Security, Governance, Observability, Reliability, Evaluation planes.
 ## Layout
 
 - `services/api` — FastAPI. Write path lives in `app/services/` (extractor, policy_broker,
-  write_service) and is orchestrated by `app/services/gateway.py`.
+  write_service) and is orchestrated by `app/services/gateway.py`. Read path:
+  `app/services/{retriever,ranker,context_composer}.py`.
+- `services/api/app/embeddings` — swappable `EmbeddingProvider` (stub default + optional OpenAI).
+  `MEMORYOPS_EMBEDDING_PROVIDER=stub|openai`. `app/core/embeddings.py` is a back-compat shim.
 - `services/api/app/compression` — optional context compression at the LLM boundary
   (`MEMORYOPS_CONTEXT_COMPRESSION=none|headroom`). `NoopCompressor` is the default;
   `HeadroomCompressor` is optional and degrades to no-op. Runs **after** policy/governance/
   composition, never before the policy broker. See ADR-007.
-- `services/api/app/db` — repository abstraction. `MEMORYOPS_STORAGE=memory|postgres`.
-- `infra/db/migrations` — SQL schema (Postgres + pgvector).
+- `services/api/app/db` — repository abstraction. `MEMORYOPS_STORAGE=memory|postgres`. Vector
+  retrieval goes through `Repository.search_candidates` (pgvector on Postgres, cosine in memory).
+- `infra/db/migrations` — SQL schema (Postgres + pgvector). RLS is **enforced** in
+  `004_rls_policies.sql` (`FORCE` + tenant policy); verify with `scripts/check_rls_policies.py`. See ADR-006.
 - `apps/web` — Next.js frontend.
 - `evals` — golden + adversarial cases, `run_evals.py`.
 

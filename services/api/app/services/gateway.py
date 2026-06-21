@@ -68,6 +68,7 @@ class Gateway:
                 candidate_memories=[],
                 audit_event_ids=[],
                 temporary_chat=req.temporary_chat,
+                retrieval_mode="none",
                 trace_id=trace_id,
             )
 
@@ -75,12 +76,15 @@ class Gateway:
         used_memories: list[UsedMemory] = []
         context_block = ""
 
-        def _read() -> tuple[str, list[UsedMemory]]:
-            scored = self._retriever.retrieve(req.tenant_id, req.user_id, req.message)
-            ranked = self._ranker.rank(scored)
-            return self._composer.compose(ranked)
+        def _read() -> tuple[str, list[UsedMemory], str]:
+            result = self._retriever.retrieve(req.tenant_id, req.user_id, req.message)
+            ranked = self._ranker.rank(result.candidates)
+            block, used = self._composer.compose(ranked)
+            return block, used, result.mode
 
-        context_block, used_memories = safe_call(_read, default=("", []), label="retrieval")
+        context_block, used_memories, retrieval_mode = safe_call(
+            _read, default=("", [], "none"), label="retrieval"
+        )
         if used_memories:
             self._audit.record(
                 tenant_id=req.tenant_id,
@@ -88,7 +92,16 @@ class Gateway:
                 action="memory_retrieved",
                 reason=f"retrieved {len(used_memories)} memory(ies) for context",
                 trace_id=trace_id,
-                metadata={"memory_count": len(used_memories)},
+                metadata={"memory_count": len(used_memories), "retrieval_mode": retrieval_mode},
+            )
+        if retrieval_mode == "fallback":
+            # Embedding failed → keyword-only retrieval (invariant #4). Track for ops.
+            self._audit.record(
+                tenant_id=req.tenant_id,
+                user_id=req.user_id,
+                action="retrieval_fallback",
+                reason="embedding unavailable; degraded to keyword-only retrieval",
+                trace_id=trace_id,
             )
 
         # ── Context compression (after governance/composition, before LLM) ──────
@@ -169,6 +182,7 @@ class Gateway:
             candidate_memories=decisions,
             audit_event_ids=audit_ids,
             temporary_chat=False,
+            retrieval_mode=retrieval_mode,
             compression=compression,
             trace_id=trace_id,
         )

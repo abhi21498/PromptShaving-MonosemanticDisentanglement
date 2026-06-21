@@ -171,19 +171,29 @@ sequenceDiagram
 6. **Audit Log** ([audit.py](../services/api/app/services/audit.py))
    - Append-only events for every lifecycle action.
 
-## Read path (Phase 2 — scaffolded)
+## Read path (Phase 2 — v0.3: real embeddings + pgvector + hybrid)
 
-- **Retriever** — hybrid: vector similarity + keyword + (future) graph. Filters by
-  tenant/user/status/sensitivity. Deleted + pending memories are excluded.
-- **Ranker** — `0.35·semantic + 0.20·keyword + 0.15·importance + 0.10·recency + 0.10·confidence +
-  0.10·reinforcement`.
+- **Embeddings** — a swappable `EmbeddingProvider` (`app/embeddings/`). Default
+  `StubEmbeddingProvider` is deterministic/offline (1536-dim, L2-normalized);
+  `OpenAIEmbeddingProvider` activates only with `OPENAI_API_KEY` and degrades to
+  the stub on failure. See [ADR-006](../infra/adr/ADR-006-pgvector-rls-retrieval.md).
+- **Retriever** — hybrid: tenant+user-scoped vector candidates from the repository's
+  `search_candidates` (real pgvector cosine on Postgres, in-Python cosine in memory)
+  plus keyword overlap. Filters tenant/user/`status='active'`/`deleted_at is null` at
+  the source; deleted + pending + wrong-tenant memories are excluded.
+- **Ranker** — `0.35·vector_similarity + 0.20·keyword + 0.15·importance + 0.10·confidence +
+  0.10·recency + 0.10·reinforcement`. Emits a per-memory `score_breakdown` of the raw
+  component signals (explainability, invariant #8). *Changing this formula requires a
+  docs/api-contracts.md or docs/architecture.md update — enforced by the PR gate.*
 - **Context Composer** — compact context block with internal source IDs; never leaks hidden memory.
 - **Context Compression (v0.2.1, optional)** — after composition and before the LLM, the
   composed *governed* context block may be compressed by an optional `ContextCompressor`
   (`MEMORYOPS_CONTEXT_COMPRESSION=headroom`). Default is a transparent no-op. It never runs
   before the policy broker and never touches the raw user message; failure degrades to the
   uncompressed block. See [ADR-007](../infra/adr/ADR-007-headroom-token-compression.md).
-- **Graceful degradation** — retrieval failure is caught and the assistant still answers (#4).
+- **Graceful degradation** — query-embedding failure falls back to keyword-only ranking
+  (`retrieval_mode="fallback"`); any retrieval failure is caught and the assistant still
+  answers (#4).
 
 ## Background path (Phase 5 — scaffolded)
 
@@ -208,7 +218,7 @@ conflict resolution (reconcile contradictions), and system-learning memory gener
 
 | # | Invariant            | Enforced in                                                        |
 |---|----------------------|-------------------------------------------------------------------|
-| 1 | Tenant isolation     | repository tenant-scoped queries; tested in `tests/test_tenant_isolation.py` |
+| 1 | Tenant isolation     | repository tenant-scoped queries + enforced Postgres RLS (migration 004); `tests/test_tenant_isolation.py`, `tests/test_rls.py` |
 | 2 | Deletion guarantee   | repository filters `status != deleted`; `tests/test_deletion.py`  |
 | 3 | Provenance           | `source` NOT NULL; write service always sets it                   |
 | 4 | Graceful degradation | gateway try/except around retrieval                               |
@@ -219,6 +229,6 @@ conflict resolution (reconcile contradictions), and system-learning memory gener
 ## Failure modes considered
 
 - LLM/extractor unavailable → heuristic extractor still produces candidates.
-- Embeddings provider down → deterministic heuristic embedding.
+- Embeddings provider down → deterministic stub embedding; query-embedding failure → keyword-only retrieval (`retrieval_mode="fallback"`).
 - DB down for reads → retrieval degrades, response still generated.
 - Policy false-negative → defense in depth: secret regex + sensitivity classifier + approvals.

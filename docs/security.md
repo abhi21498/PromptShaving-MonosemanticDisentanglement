@@ -18,8 +18,25 @@ The most dangerous failures for an AI memory system are:
 ### Tenant & user isolation (invariant #1)
 - Every repository method requires `tenant_id` and `user_id` and filters on them.
 - No endpoint returns memory across tenants. Verified by `tests/test_tenant_isolation.py`.
-- Postgres schema is **RLS-ready** (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`) so a
-  `current_setting('app.tenant_id')` policy can be layered on without code changes.
+- **Database-level Row-Level Security is enforced (v0.3).** Migration
+  `004_rls_policies.sql` applies `FORCE ROW LEVEL SECURITY` plus a tenant-isolation
+  policy (`tenant_id::text = current_setting('app.tenant_id', true)`) to
+  `memory_records`, `memory_audit_logs`, `memory_feedback`, and `memory_settings`.
+  The Postgres repository sets the transaction-local `app.tenant_id` GUC on every
+  session, so even a bug in application-level filtering cannot leak across tenants
+  (defense in depth). RLS is tenant-scoped; per-user isolation stays in application
+  SQL so tenant-wide admin/metrics reads still work.
+- Verified by `tests/test_rls.py` (DB-guarded; skips without Postgres) and
+  `scripts/check_rls_policies.py`. See [ADR-006](../infra/adr/ADR-006-pgvector-rls-retrieval.md).
+
+### Embeddings & retrieval (v0.3)
+- Embeddings come from a swappable `EmbeddingProvider`. The default stub is
+  deterministic and offline; the optional OpenAI provider activates only when
+  `OPENAI_API_KEY` is set and degrades to the stub on failure — no key is ever
+  required to run, and a flaky embeddings API never blocks the read path.
+- Vector candidate fetch (`search_candidates`) is tenant+user scoped and excludes
+  `deleted`/non-active rows at the source, so deleted and wrong-tenant memories are
+  never retrievable.
 
 ### Policy-before-storage (invariant #5)
 - The Policy Broker runs before the Write Service. Nothing reaches the store unevaluated.
@@ -54,6 +71,6 @@ The most dangerous failures for an AI memory system are:
 - Full RBAC (user / approver / admin / auditor) and per-role API scopes.
 - Data retention policies, legal hold, data export (DSAR), right-to-be-forgotten workflow.
 - Regional data residency.
-- Postgres Row-Level Security enforced (not just enabled).
+- Deploy with a restricted (non-owner) DB role in addition to `FORCE RLS` for layered enforcement.
 - SOC 2 control mapping (access, change management, audit logging, encryption).
 - Rate limiting + abuse detection on the gateway.

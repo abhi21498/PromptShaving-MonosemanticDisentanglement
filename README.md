@@ -139,6 +139,28 @@ docker compose up --build
 Compose runs migrations from `infra/db/migrations` on first boot and sets
 `MEMORYOPS_STORAGE=postgres` for the API.
 
+### Embeddings (v0.3)
+
+Retrieval uses a swappable embedding provider. The default is a deterministic,
+offline **stub** — no API key required — so tests and demos are reproducible.
+
+```bash
+export MEMORYOPS_EMBEDDING_PROVIDER=stub     # default; deterministic, no key
+# optional real embeddings:
+export MEMORYOPS_EMBEDDING_PROVIDER=openai
+export OPENAI_API_KEY=sk-...
+export OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+```
+
+An unconfigured or failing provider degrades to the stub, and a query-embedding
+failure degrades retrieval to keyword-only (`retrieval_mode="fallback"`).
+
+Verify enforced Row-Level Security against a running Postgres:
+
+```bash
+python scripts/check_rls_policies.py        # SKIPs cleanly if no DB is reachable
+```
+
 ### Frontend
 
 ```bash
@@ -188,12 +210,20 @@ the compression ratio. See [docs/token-compression.md](docs/token-compression.md
 [ADR-007](infra/adr/ADR-007-headroom-token-compression.md). Headroom is Apache-2.0;
 MemoryOps integrates it via an adapter and does not vendor its source.
 
-## What remains (Phase 2+)
+## What works as of v0.3 (real data layer)
 
-- Phase 2: hybrid retriever + ranker + context composer wired into chat responses.
-- Phase 3: governance UI actions (approve/edit/archive/delete) fully wired.
-- Phase 4: pgvector embeddings, RLS enforcement, richer eval coverage.
-- Phase 5: decay / reflection / conflict-resolution workers.
+- Swappable embedding provider (`app/embeddings/`): deterministic offline stub + optional OpenAI.
+- **Hybrid retrieval**: pgvector cosine (`search_candidates`) + keyword overlap, blended by the ranker.
+- Per-memory **`score_breakdown`** + response **`retrieval_mode`** (`hybrid` / `fallback` / `none`).
+- **Enforced** Postgres Row-Level Security (migration `004`, `FORCE` + tenant policy + session GUC).
+- Expanded evals (semantic / keyword / archived / score-breakdown) + new tests; RLS test is DB-guarded.
+
+## What remains (v0.4+)
+
+- v0.4: provider LLM adapters (OpenAI/Anthropic/Gemini) + structured extraction/evaluation.
+- v0.5: governance UI actions (approve/edit/archive/delete) fully wired.
+- v0.6: decay / reflection / conflict-resolution workers.
+- v0.7+: observability + economics, AI PR review runtime, deployment hardening.
 
 See [docs/rollout.md](docs/rollout.md) and the build phases in [CLAUDE.md](CLAUDE.md).
 

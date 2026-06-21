@@ -45,6 +45,25 @@ class Repository(ABC):
     @abstractmethod
     def retrieve_active(self, tenant_id: str, user_id: str) -> list[StoredMemory]: ...
 
+    @abstractmethod
+    def search_candidates(
+        self,
+        tenant_id: str,
+        user_id: str,
+        query_embedding: list[float],
+        *,
+        limit: int = 50,
+    ) -> list[tuple[StoredMemory, float]]:
+        """Tenant+user-scoped vector candidate fetch for hybrid retrieval.
+
+        Returns ``(memory, vector_similarity)`` pairs for active, non-deleted rows
+        ordered by similarity. On Postgres this is a pgvector ``<=>`` search with
+        DB-level tenant context set; in-memory it computes cosine in Python. An
+        empty ``query_embedding`` (embedding failure) returns active rows with
+        similarity 0.0 so callers can degrade to keyword-only ranking.
+        """
+        ...
+
     # ── audit ────────────────────────────────────────────────────────────────
     @abstractmethod
     def add_audit(self, event: StoredAudit) -> StoredAudit: ...

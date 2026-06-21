@@ -25,8 +25,11 @@ class ContextComposer:
                 UsedMemory(
                     memory_id=m.id,
                     content=m.content,
+                    memory_type=m.memory_type,
                     score=r.score,
+                    score_breakdown=r.score_breakdown,
                     reason=f"ranked {r.score} via hybrid retrieval",
+                    source=m.source,
                 )
             )
         return "\n".join(lines), used

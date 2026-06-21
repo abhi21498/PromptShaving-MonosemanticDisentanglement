@@ -86,14 +86,53 @@ export default function ChatPage() {
               </span>
             )}
 
+            {!t.resp.temporary_chat && t.resp.retrieval_mode && (
+              <span
+                className={`chip ${
+                  t.resp.retrieval_mode === "hybrid"
+                    ? "border-accent text-accent"
+                    : t.resp.retrieval_mode === "fallback"
+                    ? "border-amber-600 text-amber-400"
+                    : "border-slate-600 text-slate-400"
+                }`}
+                title="hybrid = vector + keyword · fallback = keyword-only (embedding failure) · none = memory bypassed"
+              >
+                retrieval mode: {t.resp.retrieval_mode}
+              </span>
+            )}
+
             {t.resp.used_memories.length > 0 && (
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">Memory used</p>
-                <div className="mt-1 flex flex-wrap gap-2">
+                <div className="mt-2 space-y-2">
                   {t.resp.used_memories.map((u) => (
-                    <span key={u.memory_id} className="chip border-accent text-accent">
-                      {u.content.slice(0, 50)} · {u.score.toFixed(2)}
-                    </span>
+                    <div
+                      key={u.memory_id}
+                      className="rounded-lg border border-slate-800 p-2 text-sm"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-slate-200">{u.content}</span>
+                        <span className="chip border-accent text-accent shrink-0">
+                          {u.memory_type ?? "memory"} · {u.score.toFixed(2)}
+                        </span>
+                      </div>
+                      {u.score_breakdown && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {Object.entries(u.score_breakdown).map(([k, v]) => (
+                            <span
+                              key={k}
+                              className="rounded bg-ink px-1.5 py-0.5 text-[11px] text-slate-400"
+                              title={k}
+                            >
+                              {k.replace(/_/g, " ")}: {Number(v).toFixed(2)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {u.source?.kind && (
+                        <p className="mt-1 text-[11px] text-slate-500">source: {u.source.kind}</p>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

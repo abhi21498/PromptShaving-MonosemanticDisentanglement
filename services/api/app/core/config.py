@@ -28,8 +28,11 @@ class Settings(BaseSettings):
     # LLM + embeddings. "heuristic" requires no API keys and keeps the system
     # fully functional offline (graceful degradation, invariant #4).
     llm_provider: Literal["heuristic", "openai", "anthropic", "gemini"] = "heuristic"
-    embeddings_provider: Literal["heuristic", "openai"] = "heuristic"
+    # "stub" is the deterministic default; "heuristic" is kept as a back-compat
+    # alias for the same provider. "openai" is used only when a key is present.
+    embeddings_provider: Literal["stub", "heuristic", "openai"] = "stub"
     embedding_dim: int = 1536
+    openai_embedding_model: str = "text-embedding-3-small"
 
     openai_api_key: str = ""
     anthropic_api_key: str = ""
@@ -59,6 +62,8 @@ def get_settings() -> Settings:
     overrides = {}
     if (val := os.getenv("MEMORYOPS_STORAGE")) in ("memory", "postgres"):
         overrides["storage"] = val
+    if (val := os.getenv("MEMORYOPS_EMBEDDING_PROVIDER")) in ("stub", "heuristic", "openai"):
+        overrides["embeddings_provider"] = val
     if (val := os.getenv("MEMORYOPS_CONTEXT_COMPRESSION")) in ("none", "headroom"):
         overrides["context_compression"] = val
     if (val := os.getenv("MEMORYOPS_COMPRESSION_REQUIRE_POLICY_CLEARED")) is not None:

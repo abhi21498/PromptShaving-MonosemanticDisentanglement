@@ -5,7 +5,9 @@
 ## MemoryOps mapping
 Deterministic golden + adversarial cases run against an isolated stack. Each case
 maps to an invariant (save / drop / block / pending / deleted / isolation /
-temporary). The runner enforces a pass-rate floor and zero critical failures.
+temporary / archived / retrieve / breakdown). The runner enforces a pass-rate
+floor and zero critical failures. v0.3 adds semantic + keyword retrieval,
+archived-exclusion, and score-breakdown-present cases.
 
 ## Gate (must be true to pass)
 - A golden set and an adversarial set exist as data, not code.
@@ -18,6 +20,6 @@ temporary). The runner enforces a pass-rate floor and zero critical failures.
 - `services/api/tests/test_retrieval.py::test_eval_harness_runs`
 
 ## Current result
-`python evals/run_evals.py` → 11/11, RESULT: PASS.
+`python evals/run_evals.py` → 15/15, RESULT: PASS.
 
 ## Status: ✅ Implemented (LLM-as-judge is roadmap)

@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { api, AuditEvent } from "@/lib/api";
 
 type Metrics = Awaited<ReturnType<typeof api.metrics>>;
+type Ready = Awaited<ReturnType<typeof api.ready>>;
 
 export default function AdminPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [ready, setReady] = useState<Ready | null>(null);
   const [audit, setAudit] = useState<AuditEvent[]>([]);
   const [evals, setEvals] = useState<{ passed: number; total: number; pass_rate: number } | null>(
     null
@@ -15,9 +17,10 @@ export default function AdminPage() {
 
   async function load() {
     try {
-      const [m, a] = await Promise.all([api.metrics(), api.audit()]);
+      const [m, a, r] = await Promise.all([api.metrics(), api.audit(), api.ready()]);
       setMetrics(m);
       setAudit(a);
+      setReady(r);
       setError("");
     } catch (e) {
       setError(String(e));
@@ -68,6 +71,56 @@ export default function AdminPage() {
             <p className="mt-1 text-2xl font-bold text-white">{c.value}</p>
           </div>
         ))}
+      </div>
+
+      <div className="card space-y-3">
+        <h2 className="font-semibold text-white">Retrieval & data layer</h2>
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="card">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Embedding provider</p>
+            <p className="mt-1 text-lg font-bold text-white">
+              {ready?.embeddings_provider ?? "—"}
+              <span className="ml-1 text-sm font-normal text-slate-500">
+                {ready ? `· ${ready.embedding_dim}d` : ""}
+              </span>
+            </p>
+          </div>
+          <div className="card">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Storage</p>
+            <p className="mt-1 text-lg font-bold text-white">{ready?.storage ?? "—"}</p>
+          </div>
+          <div className="card">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Retrievals</p>
+            <p className="mt-1 text-lg font-bold text-white">
+              {metrics?.by_action.memory_retrieved ?? 0}
+            </p>
+          </div>
+          <div className="card">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Fallback retrievals</p>
+            <p className="mt-1 text-lg font-bold text-white">
+              {metrics?.by_action.retrieval_fallback ?? 0}
+            </p>
+          </div>
+          <div className="card">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Wrong-tenant blocked</p>
+            <p className="mt-1 text-lg font-bold text-white">RLS</p>
+            <p className="text-[11px] text-slate-500">enforced at DB</p>
+          </div>
+          <div className="card">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Deleted-memory blocked</p>
+            <p className="mt-1 text-lg font-bold text-white">
+              {metrics?.by_status.deleted ?? 0}
+            </p>
+            <p className="text-[11px] text-slate-500">never retrievable</p>
+          </div>
+        </div>
+        <p className="text-xs text-slate-500">
+          Tenant isolation is enforced at the database via Postgres Row-Level Security
+          (migration <span className="text-slate-300">004_rls_policies.sql</span>,{" "}
+          <span className="text-slate-300">FORCE</span> + <span className="text-slate-300">app.tenant_id</span>{" "}
+          session GUC), in addition to application-level <span className="text-slate-300">tenant_id</span>/
+          <span className="text-slate-300">user_id</span> filtering. See ADR-006.
+        </p>
       </div>
 
       <div className="card">

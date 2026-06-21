@@ -95,8 +95,11 @@ class MemoryRecord(BaseModel):
 class UsedMemory(BaseModel):
     memory_id: str
     content: str
+    memory_type: MemoryType = MemoryType.semantic
     score: float
+    score_breakdown: dict[str, float] = Field(default_factory=dict)
     reason: str
+    source: Source = Field(default_factory=Source)
 
 
 # ── API contracts ────────────────────────────────────────────────────────────
@@ -126,6 +129,10 @@ class ChatResponse(BaseModel):
     candidate_memories: list[CandidateDecision] = Field(default_factory=list)
     audit_event_ids: list[str] = Field(default_factory=list)
     temporary_chat: bool = False
+    # Retrieval mode for explainability: "hybrid" (vector + keyword) or
+    # "fallback" (keyword-only after an embedding failure). "none" when memory
+    # was bypassed (temporary chat / memory disabled).
+    retrieval_mode: str = "none"
     # Optional context compression metrics (present only when compression is
     # configured and there was a context block to compress).
     compression: Compression | None = None

@@ -93,6 +93,24 @@ class InMemoryRepository(Repository):
         # Only active rows are ever retrievable (invariant #2).
         return [m for m in self._scoped(tenant_id, user_id) if m.status.value == _ACTIVE]
 
+    def search_candidates(
+        self,
+        tenant_id: str,
+        user_id: str,
+        query_embedding: list[float],
+        *,
+        limit: int = 50,
+    ) -> list[tuple[StoredMemory, float]]:
+        from ..embeddings import cosine
+
+        active = self.retrieve_active(tenant_id, user_id)
+        scored: list[tuple[StoredMemory, float]] = []
+        for m in active:
+            sim = cosine(query_embedding, m.embedding) if (query_embedding and m.embedding) else 0.0
+            scored.append((m, sim))
+        scored.sort(key=lambda pair: pair[1], reverse=True)
+        return scored[:limit]
+
     # ── audit ────────────────────────────────────────────────────────────────
     def add_audit(self, event: StoredAudit) -> StoredAudit:
         self._audit.append(event)  # append-only (invariant #7)

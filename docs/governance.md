@@ -55,6 +55,13 @@ Every chat response carries `used_memories` (the memory IDs + reasons that shape
 `candidate_memories` (what the extractor proposed and what the policy broker decided). The dashboard
 surfaces both so a user/judge can see *why* the assistant said what it said.
 
+As of v0.3 each `used_memory` also carries a `score_breakdown` (the raw vector / keyword /
+importance / confidence / recency / reinforcement signals behind its rank) and `memory_type` /
+`source`, and the response reports a `retrieval_mode` (`hybrid` | `fallback` | `none`). This makes
+ranking auditable — a reviewer can see not just *that* a memory was used, but exactly which signals
+caused it to surface. See [ADR-006](../infra/adr/ADR-006-pgvector-rls-retrieval.md) and
+[api-contracts.md](api-contracts.md).
+
 ## Context compression & governance order (v0.2.1)
 
 Optional token compression (Headroom, ADR-007) runs strictly **after** governance:

@@ -34,3 +34,8 @@ sensitivity/permission before ranking. The top-K feed the Context Composer.
 ## Exit strategy
 Swap the fixed-weight ranker for a learned reranker behind the same `Ranker` interface; tune weights
 from `memory_feedback` signals before investing in a model.
+
+## Update (v0.3)
+Implemented for real: vector candidates now come from `Repository.search_candidates`
+(pgvector cosine on Postgres, in-Python cosine in memory) and the ranker emits a
+per-memory `score_breakdown`. See [ADR-006](ADR-006-pgvector-rls-retrieval.md).

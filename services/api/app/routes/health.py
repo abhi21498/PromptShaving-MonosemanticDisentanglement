@@ -31,5 +31,7 @@ def readyz() -> dict:
         "ready": ready,
         "storage": settings.storage,
         "llm_provider": settings.llm_provider,
+        "embeddings_provider": settings.embeddings_provider,
+        "embedding_dim": settings.embedding_dim,
         "detail": detail,
     }

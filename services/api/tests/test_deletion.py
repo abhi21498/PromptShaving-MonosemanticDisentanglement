@@ -32,3 +32,14 @@ def test_delete_is_tenant_scoped(gateway, repo):
     # Wrong scope cannot delete.
     assert repo.soft_delete("t1", "other", mem.id) is None
     assert repo.get_memory("t1", "u1", mem.id).status == Status.active
+
+
+def test_deleted_memory_excluded_from_vector_search(gateway, repo):
+    # The v0.3 vector candidate path must honor the deletion guarantee too.
+    from app.embeddings import embed
+
+    _chat(gateway, "Remember that I prefer dark mode dashboards.")
+    mem = repo.list_memories("t1", "u1")[0]
+    repo.soft_delete("t1", "u1", mem.id)
+    pairs = repo.search_candidates("t1", "u1", embed("dark mode dashboards"))
+    assert all(m.id != mem.id for m, _ in pairs)

@@ -22,7 +22,7 @@ sys.path.insert(0, str(REPO_ROOT / "services" / "api"))
 from app.services.eval_harness import run_evals  # noqa: E402
 
 # Invariant cases that must NEVER fail, regardless of overall rate.
-_CRITICAL_KINDS = {"block", "deleted", "isolation", "temporary"}
+_CRITICAL_KINDS = {"block", "deleted", "isolation", "temporary", "archived"}
 
 
 def main() -> int:
