@@ -13,6 +13,7 @@ import time
 
 from ..compression import get_compressor
 from ..core.llm import get_llm
+from ..llm import detect_conflicts, get_llm_provider
 from ..core.logging import get_logger
 from ..core.reliability import safe_call
 from ..db.repository import Repository
@@ -48,6 +49,9 @@ class Gateway:
         self._composer = ContextComposer()
         self._compressor = get_compressor()
         self._llm = get_llm()
+        # v0.4: provider-neutral LLM used for advisory conflict detection on the
+        # write path. Stub by default; never overrides the policy broker (ADR-008).
+        self._llm_provider = get_llm_provider()
 
     def handle_chat(self, req: ChatRequest, trace_id: str) -> ChatResponse:
         start = time.monotonic()
@@ -258,6 +262,25 @@ class Gateway:
         )
         source = Source(kind="chat", excerpt=req.message, conversation_id=req.conversation_id)
         candidates = self._extractor.extract(req.message, source)
+        # v0.4: advisory conflict detection against existing active memories.
+        # Observability only — it logs `conflict_detection_result` and never
+        # changes the policy decision (broker stays authoritative). Wrapped so a
+        # provider hiccup can never block the write path (invariant #4).
+        if candidates:
+            existing = safe_call(
+                lambda: [
+                    (m.id, m.content)
+                    for m in self._repo.retrieve_active(req.tenant_id, req.user_id)
+                ],
+                default=[],
+                label="conflict_existing",
+            )
+            for cand in candidates:
+                safe_call(
+                    lambda c=cand: detect_conflicts(self._llm_provider, c.content, existing),
+                    default=None,
+                    label="conflict_detection",
+                )
         emit_loop_event_sync(
             self._repo,
             write_loop,

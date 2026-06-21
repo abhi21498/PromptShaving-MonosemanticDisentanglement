@@ -25,9 +25,23 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
 
-    # LLM + embeddings. "heuristic" requires no API keys and keeps the system
-    # fully functional offline (graceful degradation, invariant #4).
-    llm_provider: Literal["heuristic", "openai", "anthropic", "gemini"] = "heuristic"
+    # LLM + embeddings. "stub" requires no API keys and keeps the system fully
+    # functional offline (graceful degradation, invariant #4). "heuristic" is a
+    # back-compat alias for "stub". Provider adapters (v0.4, ADR-008) are used
+    # only when their API key is present; otherwise selection degrades to stub.
+    llm_provider: Literal["stub", "heuristic", "openai", "anthropic", "gemini"] = "stub"
+    openai_model: str = "gpt-4o-mini"
+    anthropic_model: str = "claude-haiku-4-5-20251001"
+    gemini_model: str = "gemini-1.5-flash"
+
+    # Structured memory intelligence knobs (v0.4). Defaults keep LLM output
+    # advisory and always recoverable: validate structured output, and fall back
+    # to the deterministic heuristic on any invalid/failed provider call. The LLM
+    # never overrides the deterministic policy broker (ADR-003/008).
+    llm_require_structured_output: bool = True
+    llm_fallback_to_heuristic: bool = True
+    llm_max_retries: int = 2
+
     # "stub" is the deterministic default; "heuristic" is kept as a back-compat
     # alias for the same provider. "openai" is used only when a key is present.
     embeddings_provider: Literal["stub", "heuristic", "openai"] = "stub"
@@ -57,6 +71,7 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     # MEMORYOPS_STORAGE is the documented public knob; map it onto `storage`.
+    import contextlib
     import os
 
     overrides = {}
@@ -68,4 +83,19 @@ def get_settings() -> Settings:
         overrides["context_compression"] = val
     if (val := os.getenv("MEMORYOPS_COMPRESSION_REQUIRE_POLICY_CLEARED")) is not None:
         overrides["compression_require_policy_cleared"] = val.lower() not in ("0", "false", "no")
+    # v0.4 LLM provider knobs (ADR-008). MEMORYOPS_LLM_PROVIDER is the public knob.
+    if (val := os.getenv("MEMORYOPS_LLM_PROVIDER")) in (
+        "stub", "heuristic", "openai", "anthropic", "gemini"
+    ):
+        overrides["llm_provider"] = val
+    if (val := os.getenv("MEMORYOPS_LLM_REQUIRE_STRUCTURED_OUTPUT")) is not None:
+        overrides["llm_require_structured_output"] = val.lower() not in ("0", "false", "no")
+    if (val := os.getenv("MEMORYOPS_LLM_FALLBACK_TO_HEURISTIC")) is not None:
+        overrides["llm_fallback_to_heuristic"] = val.lower() not in ("0", "false", "no")
+    if (val := os.getenv("MEMORYOPS_LLM_MAX_RETRIES")) is not None:
+        with contextlib.suppress(ValueError):
+            overrides["llm_max_retries"] = int(val)
+    if (val := os.getenv("MEMORYOPS_LLM_TIMEOUT_SECONDS")) is not None:
+        with contextlib.suppress(ValueError):
+            overrides["llm_timeout_seconds"] = float(val)
     return Settings(**overrides)

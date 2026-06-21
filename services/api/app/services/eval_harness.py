@@ -14,6 +14,8 @@ tenant data. Case types map to invariants:
   retrieve    — a saved memory must be retrieved for a related query (semantic/keyword)
   breakdown   — retrieval results must carry a full score breakdown
   loop         — read/write loop evidence must be emitted
+  structured   — extraction runs via the validated structured path (v0.4)
+  conflict     — a contradicting candidate is flagged by conflict detection (v0.4)
 """
 
 from __future__ import annotations
@@ -210,6 +212,33 @@ def _run_case(gw: Gateway, repo: InMemoryRepository, case: dict) -> CaseResult:
             kind,
             ok,
             f"write_runs={len(write_runs)} read_runs={len(read_runs)}",
+        )
+
+    if kind == "structured":
+        # v0.4: extraction must run through the validated structured path and
+        # yield at least the expected number of candidates.
+        from ..llm import extract_memories, get_llm_provider
+
+        outcome = extract_memories(get_llm_provider(), case["message"])
+        min_memories = case.get("min_memories", 1)
+        ok = outcome.mode == "structured" and len(outcome.memories) >= min_memories
+        return CaseResult(
+            cid, kind, ok, f"mode={outcome.mode} memories={len(outcome.memories)}"
+        )
+
+    if kind == "conflict":
+        # v0.4: save a memory, then check a contradicting candidate is flagged.
+        from ..llm import detect_conflicts, get_llm_provider
+
+        save_msg = case["save_message"]
+        candidate = case["candidate"]
+        expect = case.get("expect_conflict", True)
+        _decisions_for(gw, tenant, user, save_msg)
+        existing = [(m.id, m.content) for m in repo.retrieve_active(tenant, user)]
+        outcome = detect_conflicts(get_llm_provider(), candidate, existing)
+        ok = outcome.result.has_conflict == expect
+        return CaseResult(
+            cid, kind, ok, f"has_conflict={outcome.result.has_conflict} expected={expect}"
         )
 
     return CaseResult(cid, kind, False, f"unknown case kind: {kind}")

@@ -20,6 +20,7 @@ only when its stated conditions are true.
 | 0 Cognitive Design | [phase-00](phase-gates/phase-00-cognitive-design.md) | What should memory decide? | ✅ |
 | 1 System Architecture | [phase-01](phase-gates/phase-01-system-architecture.md) | Service boundaries & invariants | ✅ |
 | 4 Workflow Orchestration | [phase-04](phase-gates/phase-04-workflow-orchestration.md) | Loop definitions, transitions, evidence | ✅ |
+| 5 LLM Reasoning | [phase-05](phase-gates/phase-05-llm-reasoning.md) | Provider adapters, structured intelligence | ✅ |
 | 6 Memory Architecture | [phase-06](phase-gates/phase-06-memory-architecture.md) | Short/long-term, RAG, hybrid retrieval | 🟡 |
 | 9 Evaluation Systems | [phase-09](phase-gates/phase-09-evaluation.md) | Golden + adversarial cases | ✅ |
 | 10 Observability | [phase-10](phase-gates/phase-10-observability.md) | Traces, audit, latency, cost | 🟡 |
@@ -31,5 +32,5 @@ only when its stated conditions are true.
 
 Legend: ✅ implemented · 🟡 scaffolded / partial.
 
-The phases not listed (2–5, 7, 8, 13, 14, 16, 17, 19) are acknowledged but out of
+The phases not listed (2, 3, 7, 8, 13, 14, 16, 17, 19) are acknowledged but out of
 scope for the current milestones; see [rollout.md](rollout.md).

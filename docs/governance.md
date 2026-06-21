@@ -20,6 +20,17 @@ do *what* to memory, *why* it happened, and *how* it is proven.
    active ─▶ (DELETE) ─▶ deleted   [never retrievable again]
 ```
 
+### LLM extraction is advisory (v0.4)
+
+The extractor may use an LLM provider (`app/llm/`, ADR-008) to propose candidates,
+but the **policy broker remains the single authoritative decision point**. LLM
+output is schema-validated and advisory only: it cannot upgrade, bypass, or
+override a policy decision, and secret-like content is blocked regardless of what
+a model proposes. A provider failure or invalid JSON degrades to the deterministic
+heuristic and never blocks the response. Conflict detection (`detect_conflicts`)
+is observability-only metadata (`conflict_detection_result`) and changes no
+decision.
+
 ## Decision semantics
 
 | Decision             | Stored? | Retrievable? | Audit action            |

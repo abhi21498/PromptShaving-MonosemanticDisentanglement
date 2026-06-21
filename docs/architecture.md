@@ -216,7 +216,13 @@ in its decision cycle; audit logs answer who did what, when, and why.
 2. **Extractor** ([extractor.py](../services/api/app/services/extractor.py))
    - Turns a conversation turn into zero or more candidate memories (JSON).
    - Classifies `memory_type`, assigns `confidence` + `importance`, preserves `source_excerpt`.
-   - Heuristic by default (no API key needed); pluggable LLM adapter via `app/core/llm.py`.
+   - v0.4: delegates to the provider-neutral LLM layer ([app/llm/](../services/api/app/llm/),
+     ADR-008) for **schema-validated structured extraction**. Default provider is the
+     deterministic `StubProvider` (no API key); OpenAI/Anthropic/Gemini are optional.
+     Invalid JSON / provider failure degrades to the heuristic. LLM output is advisory —
+     the policy broker (next) is authoritative.
+   - The gateway also runs advisory **conflict detection** (`detect_conflicts`) on the
+     write path: observability only (`conflict_detection_result`), never a decision change.
 
 3. **Policy Broker / Evaluator** ([policy_broker.py](../services/api/app/services/policy_broker.py))
    - Runs **before storage** (invariant #5).

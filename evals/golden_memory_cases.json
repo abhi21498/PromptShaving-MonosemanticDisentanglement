@@ -64,5 +64,25 @@
     "kind": "loop",
     "save_message": "Remember that I prefer loop-engineered memory systems.",
     "query": "What kind of memory systems do I prefer?"
+  },
+  {
+    "id": "golden-structured-extraction",
+    "kind": "structured",
+    "message": "Remember that I prefer enterprise-style architecture explanations.",
+    "min_memories": 1
+  },
+  {
+    "id": "golden-conflict-preference-flip",
+    "kind": "conflict",
+    "save_message": "Remember that I prefer dark mode dashboards.",
+    "candidate": "I no longer prefer dark mode dashboards.",
+    "expect_conflict": true
+  },
+  {
+    "id": "golden-conflict-none-when-unrelated",
+    "kind": "conflict",
+    "save_message": "Remember that I prefer dark mode dashboards.",
+    "candidate": "I am building a memory governance platform.",
+    "expect_conflict": false
   }
 ]

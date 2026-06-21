@@ -179,6 +179,53 @@ RULES: list[Rule] = [
         r"^(docs/api-contracts\.md$|docs/architecture\.md$)",
         "API routes changed without updating docs/api-contracts.md or docs/architecture.md.",
     ),
+    # ── v0.4 Provider LLM adapters + structured memory intelligence (ADR-008) ──
+    Rule(
+        "Memory Correctness",
+        "llm-provider-tests",
+        r"^services/api/app/llm/",
+        r"^services/api/tests/test_(llm_|stub_llm_|structured_|conflict_).*\.py$",
+        "LLM provider/intelligence code changed without LLM provider tests "
+        "(test_llm_*/test_stub_llm_*/test_structured_*/test_conflict_*).",
+    ),
+    Rule(
+        "Memory Correctness",
+        "structured-schemas-tests",
+        r"^services/api/app/llm/schemas\.py$",
+        r"^services/api/tests/test_structured_output_validation\.py$",
+        "Structured output schemas changed without structured-output validation tests.",
+    ),
+    Rule(
+        "Memory Correctness",
+        "llm-fallback-tests",
+        r"^services/api/app/llm/(fallback|providers|registry|intelligence)\.py$",
+        r"^services/api/tests/test_llm_fallback\.py$",
+        "Provider fallback/orchestration changed without fallback tests.",
+    ),
+    Rule(
+        "Memory Correctness",
+        "extractor-extraction-eval",
+        r"^services/api/app/services/extractor\.py$",
+        r"^(evals/golden_memory_cases\.json$"
+        r"|services/api/tests/test_structured_memory_extraction\.py$)",
+        "Extractor changed without an extraction eval or structured-extraction test update.",
+    ),
+    Rule(
+        "Docs/ADR",
+        "llm-prompts-docs",
+        r"^services/api/app/llm/prompts/",
+        r"^(docs/(provider-llm-adapters|structured-memory-intelligence)\.md$|evals/)",
+        "Prompt assets changed without updating provider/intelligence docs or evals.",
+    ),
+    Rule(
+        "Docs/ADR",
+        "llm-adapters-adr",
+        r"^services/api/app/llm/",
+        r"^(docs/provider-llm-adapters\.md$"
+        r"|docs/structured-memory-intelligence\.md$"
+        r"|infra/adr/ADR-008-provider-llm-adapters\.md$)",
+        "LLM layer changed without updating provider/intelligence docs or ADR-008.",
+    ),
 ]
 
 

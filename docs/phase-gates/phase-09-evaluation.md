@@ -7,7 +7,10 @@ Deterministic golden + adversarial cases run against an isolated stack. Each cas
 maps to an invariant (save / drop / block / pending / deleted / isolation /
 temporary / archived / retrieve / breakdown). The runner enforces a pass-rate
 floor and zero critical failures. v0.3 adds semantic + keyword retrieval,
-archived-exclusion, and score-breakdown-present cases.
+archived-exclusion, and score-breakdown-present cases. v0.4 adds `structured`
+(extraction runs via the validated structured path) and `conflict` (a
+contradicting candidate is flagged) cases, plus adversarial structured-secret and
+policy-override-injection cases that must still BLOCK.
 
 ## Gate (must be true to pass)
 - A golden set and an adversarial set exist as data, not code.
@@ -20,6 +23,6 @@ archived-exclusion, and score-breakdown-present cases.
 - `services/api/tests/test_retrieval.py::test_eval_harness_runs`
 
 ## Current result
-`python evals/run_evals.py` → 15/15, RESULT: PASS.
+`python evals/run_evals.py` → 21/21, RESULT: PASS.
 
 ## Status: ✅ Implemented (LLM-as-judge is roadmap)
