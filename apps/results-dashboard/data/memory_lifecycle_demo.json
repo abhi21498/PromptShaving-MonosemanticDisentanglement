@@ -1,0 +1,35 @@
+{
+  "stages": [
+    {"stage": "Capture", "what": "A message arrives; the extractor proposes typed memory candidates.", "invariant": "Provenance: every candidate carries a non-null source."},
+    {"stage": "Evaluate", "what": "The policy broker scores each candidate and decides KEEP / DROP / BLOCK.", "invariant": "Policy-before-storage: the broker runs before any write."},
+    {"stage": "Store", "what": "Approved memories are written to typed stores with tenant_id + user_id.", "invariant": "Tenant isolation: every row is scoped to a tenant and user."},
+    {"stage": "Retrieve", "what": "Tenant-scoped hybrid retrieval pulls candidate memories for a query.", "invariant": "Deletion guarantee: status='deleted' rows are never retrieved."},
+    {"stage": "Rank", "what": "Candidates are ranked by relevance, recency, and importance.", "invariant": "Graceful degradation: retrieval failures never block responses."},
+    {"stage": "Compose", "what": "The context composer assembles the final memory context for the LLM.", "invariant": "Temporary chat: temporary_chat=true reads/writes nothing."},
+    {"stage": "Update", "what": "Conflicts are detected and superseding memories are merged or revised.", "invariant": "LLM output is advisory; the policy broker stays authoritative."},
+    {"stage": "Forget", "what": "Decay/archive/deletion move stale or removed memory out of the active set.", "invariant": "Workers never resurrect deleted memory."},
+    {"stage": "Audit", "what": "Every lifecycle action appends a content-safe audit event.", "invariant": "Auditability: every lifecycle action emits an audit event."}
+  ],
+  "example_write": {
+    "input_message": "By the way, I prefer metric units and dark mode.",
+    "extracted_candidates": [
+      {"content": "User prefers metric units", "memory_type": "preference", "source": "chat", "decision": "KEEP"},
+      {"content": "User prefers dark mode", "memory_type": "preference", "source": "chat", "decision": "KEEP"},
+      {"content": "It is raining today", "memory_type": "trivia", "source": "chat", "decision": "DROP"}
+    ],
+    "stored_count": 2,
+    "dropped_count": 1,
+    "blocked_count": 0,
+    "audit_events": ["memory_extraction", "memory_evaluation", "memory_created", "memory_created", "memory_dropped"]
+  },
+  "example_read": {
+    "query": "What units should I use in the summary?",
+    "retrieved": [
+      {"content": "User prefers metric units", "memory_type": "preference", "score": 0.91},
+      {"content": "User prefers dark mode", "memory_type": "preference", "score": 0.42}
+    ],
+    "excluded_deleted": 1,
+    "composed_context_chars": 184,
+    "audit_events": ["memory_read_loop", "memory_retrieved"]
+  }
+}

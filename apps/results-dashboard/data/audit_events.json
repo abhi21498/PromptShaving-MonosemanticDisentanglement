@@ -1,0 +1,32 @@
+{
+  "note": "Demo audit timeline. Event names match the real AuditService vocabulary. Audit events are content-safe (ids/counts/decisions only).",
+  "deletion_compaction_timeline": [
+    {"seq": 1, "event": "memory_deleted", "detail": "User requested deletion; memory soft-deleted (status='deleted')."},
+    {"seq": 2, "event": "deletion_verification_passed", "detail": "Confirmed the soft-deleted memory is not retrievable."},
+    {"seq": 3, "event": "deletion_compaction_started", "detail": "Retention window elapsed; compaction begins for eligible memory."},
+    {"seq": 4, "event": "memory_content_compacted", "detail": "Content payload cleared (set to null)."},
+    {"seq": 5, "event": "memory_vector_purge_attempted", "detail": "Vector material removal attempted."},
+    {"seq": 6, "event": "memory_vector_purge_verified", "detail": "Verified the memory cannot be returned from the candidate/search path."},
+    {"seq": 7, "event": "memory_purge_tombstone_preserved", "detail": "Governance tombstone retained for audit/idempotency."},
+    {"seq": 8, "event": "deletion_compaction_completed", "detail": "Compaction run finished; counts recorded."}
+  ],
+  "write_path_timeline": [
+    {"seq": 1, "event": "memory_extraction", "detail": "Extractor proposed typed candidates from the message."},
+    {"seq": 2, "event": "memory_evaluation", "detail": "Policy broker scored candidates (KEEP/DROP/BLOCK)."},
+    {"seq": 3, "event": "memory_created", "detail": "Approved memory written with tenant_id + user_id."},
+    {"seq": 4, "event": "memory_dropped", "detail": "Low-value candidate dropped before storage."}
+  ],
+  "event_glossary": [
+    {"event": "memory_created", "plane": "Store"},
+    {"event": "memory_retrieved", "plane": "Retrieve"},
+    {"event": "memory_updated", "plane": "Update"},
+    {"event": "memory_merged", "plane": "Update"},
+    {"event": "memory_decay_applied", "plane": "Forget"},
+    {"event": "memory_archived_by_worker", "plane": "Forget"},
+    {"event": "memory_deleted", "plane": "Forget"},
+    {"event": "deletion_verification_passed", "plane": "Forget"},
+    {"event": "memory_content_compacted", "plane": "Forget"},
+    {"event": "memory_vector_purge_verified", "plane": "Forget"},
+    {"event": "memory_purge_tombstone_preserved", "plane": "Audit"}
+  ]
+}

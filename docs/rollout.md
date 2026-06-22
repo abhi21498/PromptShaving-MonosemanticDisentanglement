@@ -77,14 +77,26 @@ legacy `jobs.py`). New migration `006_worker_runtime.sql`. See
 [phase-gates/phase-14-worker-runtime-orchestration.md](phase-gates/phase-14-worker-runtime-orchestration.md),
 [ADR-012](../infra/adr/ADR-012-worker-runtime-orchestration.md).
 
+## Phase 6 — Public results dashboard + evidence explorer ✅ (v0.9)
+A read-only public evidence/demo dashboard ([`apps/results-dashboard/`](../apps/results-dashboard))
+makes MemoryOps understandable and inspectable: overview, version timeline,
+memory lifecycle, deletion-compaction proof, worker runtime results, audit
+evidence, validation results, and honest limitations. It is **demo-only** —
+static demo JSON, no live DB, no secrets, no auth, no writes — and runs on
+Streamlit, isolated from the core API. The Next.js app (`apps/web`) remains the
+official product / governance UI; deployment stays Railway-only (no Vercel). See
+[results-dashboard.md](results-dashboard.md).
+
 ## Public roadmap
 
 | Version | Scope | Status |
 |---------|-------|--------|
 | v0.7 | Physical deletion compaction + vector purge verification | ✅ Done |
 | v0.8 | Worker runtime + scheduled lifecycle orchestration | ✅ Done |
-| v0.9 | Retention policies + legal hold + consent-aware memory | ⏳ Next |
-| v0.10 | Assistant SDK + example apps | ⏳ Planned |
+| v0.9 | Public results dashboard + evidence explorer | ✅ Done |
+| v0.10 | Retention policies + legal hold + consent-aware memory | ⏳ Next |
+| v0.11 | Assistant SDK + integration examples | ⏳ Planned |
+| v0.12 | Hosted demo + public screenshots | ⏳ Planned |
 | v1.0 | Production-ready governed memory runtime | ⏳ Planned |
 
 ## Production roadmap (beyond hackathon)
