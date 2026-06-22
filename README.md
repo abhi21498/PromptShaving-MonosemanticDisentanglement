@@ -382,19 +382,39 @@ MemoryOps integrates it via an adapter and does not vendor its source.
 - Run it with `cd apps/results-dashboard && pip install -r requirements.txt &&
   streamlit run app.py`. See [docs/results-dashboard.md](docs/results-dashboard.md).
 
+## What works as of v0.10 (retention + legal hold + consent-aware memory)
+
+- **Retention policy packs** (sensitivity tier → retention window: `default` /
+  `strict` / `extended`) drive a new `retention` lifecycle worker that soft-deletes
+  expired or consent-revoked memory — then the v0.7 deletion-verification +
+  compaction pipeline takes over. **OFF by default**; a disabled/dry run records
+  an admin-readable decision preview without deleting.
+- **Legal hold** is a fail-closed override that blocks **all** forgetting (decay,
+  archive, retention, compaction) and the API delete route (`DELETE` → HTTP 409).
+  A held memory's content is *preserved* for discovery — a preservation control,
+  **not** crypto-shred.
+- **Consent-aware memory** records consent (`granted`/`withdrawn`/`expired`/
+  `not_required`); withdrawn/expired consent makes memory eligible for deletion.
+  Pins exempt from decay/archive; protection exempts from retention auto-deletion.
+- Governance state is metadata-driven (new migration `007_…`) and every change is
+  audited. Admin surface: `/api/retention/*`. See
+  [docs/retention-policies.md](docs/retention-policies.md) and
+  [ADR-013](infra/adr/ADR-013-retention-legal-hold-consent.md).
+
 ## Roadmap
 
 - **v0.7** — physical deletion compaction + vector purge verification ✅
 - **v0.8** — worker runtime + scheduled lifecycle orchestration ✅
 - **v0.9** — public results dashboard + evidence explorer ✅
-- **v0.10** — retention policies + legal hold + consent-aware memory
+- **v0.10** — retention policies + legal hold + consent-aware memory ✅
 - **v0.11** — assistant SDK + integration examples
 - **v0.12** — hosted demo + public screenshots
 - **v1.0** — production-ready governed memory runtime
 
-## What remains (v0.10+)
+## What remains (v0.11+)
 
-- Retention windows, legal hold, consent-aware capture (v0.10).
+- Assistant SDK + integration examples (v0.11); hosted demo + screenshots (v0.12).
+- Consent *capture* at the UI/SDK edge; cross-tenant retention scheduling.
 - Hard purge / crypto-shred and pgvector index reclamation (beyond v0.7's
   auditable compaction).
 - Optional queue/cron backend behind the orchestrator interface; auto-discovered

@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from . import __version__
 from .core.config import get_settings
 from .core.logging import clear_request_context, get_logger, set_request_context, setup_logging
-from .routes import audit, chat, evals, health, loops, memories
+from .routes import audit, chat, evals, health, loops, memories, retention
 
 settings = get_settings()
 setup_logging(settings.log_level)
@@ -67,6 +67,7 @@ async def unhandled_exception(request: Request, exc: Exception):
 app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(memories.router)
+app.include_router(retention.router)
 app.include_router(audit.router)
 app.include_router(evals.router)
 app.include_router(loops.router)

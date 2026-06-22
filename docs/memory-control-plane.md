@@ -79,3 +79,13 @@ is intentionally **out of scope** for v0.5 and is future lifecycle work.
 5. Policy-before-storage — unchanged; the control plane never writes around it.
 6. Temporary chat — never persisted, so never visible here.
 7. Auditability — every action (and detail view) appends an audit event.
+
+## Legal hold on delete (v0.10)
+
+`DELETE /api/memories/{id}` is now fail-closed against legal hold (ADR-013): if the
+memory is under hold, the delete is refused with **HTTP 409** and the blocked
+attempt is audited (`memory_legal_hold_delete_blocked`) — the governance loop run
+records a `failed` terminal state. Releasing the hold via
+`POST /api/retention/legal-hold {on:false}` allows deletion again. Hold/consent/pin/
+protection state is managed through the [`/api/retention`](api-contracts.md#retention--legal-hold--consent-v010)
+surface; see [retention-policies.md](retention-policies.md).

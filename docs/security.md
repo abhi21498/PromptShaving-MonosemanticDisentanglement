@@ -151,8 +151,33 @@ The most dangerous failures for an AI memory system are:
 - KMS-managed keys with rotation.
 - SSO/SAML + SCIM provisioning.
 - Full RBAC (user / approver / admin / auditor) and per-role API scopes.
-- Data retention policies, legal hold, data export (DSAR), right-to-be-forgotten workflow.
+- Data export (DSAR), right-to-be-forgotten workflow (retention/legal hold landed in v0.10).
 - Regional data residency.
 - Deploy with a restricted (non-owner) DB role in addition to `FORCE RLS` for layered enforcement.
 - SOC 2 control mapping (access, change management, audit logging, encryption).
 - Rate limiting + abuse detection on the gateway.
+
+## Retention, legal hold & consent (v0.10)
+
+The retention layer (ADR-013, [retention-policies.md](retention-policies.md)) adds
+compliance controls over the deletion pipeline. Governance state — legal hold,
+consent, pins, protection, and the computed retention window — is metadata-driven
+(like the v0.7 compaction tombstone) and round-trips on both repository backends;
+`postgres_repo.update_memory` was fixed to persist `extra_metadata` so this state
+(and the v0.6 lifecycle markers) survive updates. Migration
+`007_retention_legal_hold_consent.sql` adds partial indexes for "on hold" /
+"consent withdrawn" lookups.
+
+Security-relevant properties:
+
+- **Legal hold is fail-closed and preservation-oriented.** A held memory cannot be
+  decayed, archived, retention-deleted, or compacted, and the API delete route
+  refuses it (HTTP 409, audited). Hold *retains* content for discovery — it is
+  **not** crypto-shred and makes no physical-erasure claim.
+- **Consent withdrawal is honored.** Withdrawn/expired consent makes a memory
+  eligible for the normal soft-delete → verification → compaction path; it never
+  bypasses the deletion guarantee.
+- **Retention only ever makes the system more conservative.** The engine decides
+  eligibility; the policy broker stays authoritative and is never bypassed
+  (invariant #5). All mutations are tenant-scoped (invariant #1) and audited
+  (invariant #7). Retention auto-deletion is **OFF by default**.

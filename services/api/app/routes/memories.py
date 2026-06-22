@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
+from ..db import governance as gov
 from ..db.entities import StoredAudit
 from ..db.factory import get_repository
 from ..deps import audit_service
@@ -319,6 +320,30 @@ def delete_memory(memory_id: str, body: DeleteRequest, request: Request) -> dict
         reason="memory owner/scope checked for delete",
         evidence={"tenant_scoped": True, "user_scoped": True},
     )
+    # Legal hold (v0.10) is fail-closed: a held memory cannot be deleted —
+    # manually or by a worker — until the hold is released. Refuse with 409 and
+    # leave the loop run recorded so the blocked attempt is auditable.
+    existing = repo.get_memory(body.tenant_id, body.user_id, memory_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="memory not found")
+    if gov.is_legal_hold(existing):
+        emit_loop_event_sync(
+            repo,
+            loop,
+            LoopState.FAILED,
+            event_type="memory_governance_blocked",
+            reason="delete blocked: memory under legal hold",
+            evidence={"memory_id": memory_id, "legal_hold": True},
+        )
+        audit_service().record(
+            tenant_id=body.tenant_id,
+            user_id=body.user_id,
+            memory_id=memory_id,
+            action="memory_legal_hold_delete_blocked",
+            reason="delete refused; memory under legal hold",
+            trace_id=trace_id,
+        )
+        raise HTTPException(status_code=409, detail="memory is under legal hold")
     m = repo.soft_delete(body.tenant_id, body.user_id, memory_id)
     if not m:
         raise HTTPException(status_code=404, detail="memory not found")

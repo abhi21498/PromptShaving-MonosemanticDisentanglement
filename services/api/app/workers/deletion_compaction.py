@@ -32,6 +32,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from ..core.config import get_settings
+from ..db import governance as gov
 from ..db.entities import StoredMemory
 from ..db.repository import Repository
 from ..services.audit import AuditService
@@ -42,6 +43,7 @@ from .schemas import (
     DELETION_COMPACTION_SKIPPED,
     DELETION_COMPACTION_STARTED,
     MEMORY_CONTENT_COMPACTED,
+    MEMORY_LEGAL_HOLD_COMPACTION_BLOCKED,
     MEMORY_PURGE_TOMBSTONE_PRESERVED,
     MEMORY_VECTOR_PURGE_ATTEMPTED,
     MEMORY_VECTOR_PURGE_FAILED,
@@ -90,13 +92,31 @@ class DeletionCompactionWorker(LifecycleWorker):
         )
         result.audit_event_ids.append(started.id)
 
-        eligible = compacted = verified = failed = tombstones = 0
+        eligible = compacted = verified = failed = tombstones = held = 0
         # Repository excludes already-compacted rows → idempotent, retry-safe.
         for memory in self._repo.list_deleted_for_compaction(ctx.tenant_id, ctx.user_id):
             result.scanned_count += 1
             # Defense in depth: only deleted rows, never resurrect/touch active.
             if memory.status.value != _DELETED:
                 result.skipped_count += 1
+                continue
+            # Legal hold (v0.10) preserves content for discovery: a held memory is
+            # never compacted even once deleted + past its window. Fail-closed —
+            # the override is recorded so the preserved payload is auditable.
+            if gov.is_legal_hold(memory):
+                held += 1
+                result.skipped_count += 1
+                result.audit_event_ids.append(
+                    self._audit.record(
+                        tenant_id=ctx.tenant_id,
+                        user_id=ctx.user_id,
+                        action=MEMORY_LEGAL_HOLD_COMPACTION_BLOCKED,
+                        reason="legal hold in force; content + vector material preserved",
+                        memory_id=memory.id,
+                        trace_id=ctx.trace_id,
+                        metadata={"legal_hold_reason": gov.legal_hold_reason(memory)},
+                    ).id
+                )
                 continue
             if self._deleted_age_days(memory, ctx.now) < self._min_age_days:
                 result.skipped_count += 1  # within retention window; not yet eligible
@@ -199,6 +219,7 @@ class DeletionCompactionWorker(LifecycleWorker):
             "compacted_count": compacted,
             "verified_count": verified,
             "failed_count": failed,
+            "legal_hold_blocked_count": held,
             "skipped_count": result.skipped_count,
             "tombstone_preserved_count": tombstones,
             "dry_run": ctx.dry_run,

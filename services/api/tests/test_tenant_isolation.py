@@ -95,3 +95,24 @@ def test_audit_listing_is_tenant_and_memory_scoped(gateway, repo):
     assert all(e.memory_id == mem_id for e in scoped)
     # A non-existent memory id yields no events.
     assert repo.list_audit("tenant_acme", "user_acme", memory_id="missing") == []
+
+
+def test_governance_flags_are_tenant_scoped(gateway, repo):
+    # v0.10: setting a legal hold on one tenant's memory must not affect another
+    # tenant's memory, and update_memory persists governance metadata in scope.
+    from app.db import governance as gov
+
+    _chat(gateway, "t1", "alice", "Remember Alice prefers tabs.")
+    _chat(gateway, "t2", "bob", "Remember Bob prefers spaces.")
+    a = repo.list_memories("t1", "alice")[0]
+    b = repo.list_memories("t2", "bob")[0]
+
+    gov.set_legal_hold(a, on=True, reason="hold")
+    repo.update_memory(a)
+
+    # Persisted in scope ...
+    assert gov.is_legal_hold(repo.get_memory("t1", "alice", a.id))
+    # ... and never leaks to the other tenant.
+    assert not gov.is_legal_hold(repo.get_memory("t2", "bob", b.id))
+    # Wrong-scope read cannot see the held memory at all.
+    assert repo.get_memory("t2", "bob", a.id) is None

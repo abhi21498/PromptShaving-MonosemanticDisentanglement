@@ -137,3 +137,21 @@ deliberately single-scope so tenant isolation is structural.
   physical disk/page erasure or pgvector index reclamation — see
   [deletion-compaction.md](deletion-compaction.md) and
   [vector-purge-verification.md](vector-purge-verification.md).
+
+## Retention worker + legal hold (v0.10)
+
+A `retention` job (ADR-013, [retention-policies.md](retention-policies.md)) joins
+the lifecycle order *before* deletion compaction. It evaluates **active** memory
+against a retention policy pack (sensitivity tier → window) and soft-deletes
+memory whose window elapsed or whose consent was withdrawn/expired; the existing
+deletion-verification + compaction workers then handle the deleted rows. It is
+**OFF by default** (`workers_retention_enabled`) and a disabled/dry run records
+admin-readable decisions without deleting.
+
+**Legal hold** is now enforced across the lifecycle as a fail-closed override:
+`decay` and `archive` skip held memory, the `retention` worker never deletes it
+(`memory_retention_hold_respected`), and `deletion_compaction` preserves a held
+deleted memory's content + vector material (`memory_legal_hold_compaction_blocked`)
+rather than clearing it — preserved for discovery, not crypto-shredded. Pins
+exempt from decay/archive; protection exempts from retention auto-deletion. All
+governance state is content-free metadata and every action is audited.

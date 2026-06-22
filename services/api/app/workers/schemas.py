@@ -18,6 +18,7 @@ from enum import Enum
 class WorkerJob(str, Enum):
     decay = "decay"
     archive = "archive"
+    retention = "retention"
     deletion_compaction = "deletion_compaction"
     deletion_verification = "deletion_verification"
     conflict_scan = "conflict_scan"
@@ -25,13 +26,15 @@ class WorkerJob(str, Enum):
 
 
 # Jobs the runner executes for the "all" selector, in a deliberate order:
-# mutating jobs first, then compaction of already-deleted memory, and read-only
-# verification last so it observes the state the mutating + compaction jobs left.
+# mutating jobs first, then retention soft-deletes expired/consent-revoked memory,
+# then compaction of already-deleted memory, and read-only verification last so it
+# observes the state the mutating + retention + compaction jobs left.
 DEFAULT_JOB_ORDER: tuple[WorkerJob, ...] = (
     WorkerJob.decay,
     WorkerJob.archive,
     WorkerJob.conflict_scan,
     WorkerJob.reflection,
+    WorkerJob.retention,
     WorkerJob.deletion_compaction,
     WorkerJob.deletion_verification,
 )
@@ -83,6 +86,15 @@ MEMORY_VECTOR_PURGE_ATTEMPTED = "memory_vector_purge_attempted"
 MEMORY_VECTOR_PURGE_VERIFIED = "memory_vector_purge_verified"
 MEMORY_VECTOR_PURGE_FAILED = "memory_vector_purge_failed"
 MEMORY_PURGE_TOMBSTONE_PRESERVED = "memory_purge_tombstone_preserved"
+# v0.10 — retention policies + legal hold + consent-aware memory (ADR-013).
+# Content-free: ids, policy name, outcome, counts — never memory text.
+RETENTION_SCAN_STARTED = "retention_scan_started"
+RETENTION_SCAN_COMPLETED = "retention_scan_completed"
+RETENTION_DECISION_RECORDED = "retention_decision_recorded"
+MEMORY_RETENTION_EXPIRED = "memory_retention_expired"
+MEMORY_CONSENT_REVOKED = "memory_consent_revoked"
+MEMORY_RETENTION_HOLD_RESPECTED = "memory_retention_hold_respected"
+MEMORY_LEGAL_HOLD_COMPACTION_BLOCKED = "memory_legal_hold_compaction_blocked"
 
 WORKER_AUDIT_ACTIONS: frozenset[str] = frozenset(
     {
@@ -105,6 +117,13 @@ WORKER_AUDIT_ACTIONS: frozenset[str] = frozenset(
         MEMORY_VECTOR_PURGE_VERIFIED,
         MEMORY_VECTOR_PURGE_FAILED,
         MEMORY_PURGE_TOMBSTONE_PRESERVED,
+        RETENTION_SCAN_STARTED,
+        RETENTION_SCAN_COMPLETED,
+        RETENTION_DECISION_RECORDED,
+        MEMORY_RETENTION_EXPIRED,
+        MEMORY_CONSENT_REVOKED,
+        MEMORY_RETENTION_HOLD_RESPECTED,
+        MEMORY_LEGAL_HOLD_COMPACTION_BLOCKED,
     }
 )
 

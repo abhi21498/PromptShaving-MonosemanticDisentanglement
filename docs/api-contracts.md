@@ -138,3 +138,22 @@ The CLI prints the report JSON and exits non-zero when `ok` is `false` (a failed
 job or a deletion-verification finding), so it doubles as a scheduled health
 check. Worker audit metadata is structured and safe: ids, counts, and flags only —
 never raw memory content or full user messages.
+
+## Retention + Legal Hold + Consent (v0.10)
+
+Admin/governance surface over the retention layer (ADR-013). All endpoints are
+tenant + user scoped; every mutation appends a content-free audit event and reads
+never return memory text. See [retention-policies.md](retention-policies.md).
+
+| Method | Path | Body / query | Purpose |
+|---|---|---|---|
+| POST | `/api/retention/legal-hold` | `{tenant_id,user_id,memory_id,on,reason?}` | Place / release a fail-closed legal hold |
+| POST | `/api/retention/pin` | `{tenant_id,user_id,memory_id,on}` | Pin / unpin (exempt from decay + archive) |
+| POST | `/api/retention/protect` | `{tenant_id,user_id,memory_id,on}` | Protect / unprotect (exempt from auto-deletion) |
+| POST | `/api/retention/consent` | `{tenant_id,user_id,memory_id,status,expires_at?}` | Record consent (`granted`/`withdrawn`/`expired`/`not_required`) |
+| GET | `/api/retention/policies` | — | List retention policy packs |
+| GET | `/api/retention/decisions` | `?tenant_id&user_id&policy?` | Read-only retention-decision **preview** (deletes nothing) |
+| GET | `/api/retention/memory/{id}` | `?tenant_id&user_id&policy?` | Governance state + decision for one memory |
+
+`DELETE /api/memories/{id}` now returns **HTTP 409** when the memory is under
+legal hold (the blocked attempt is audited as `memory_legal_hold_delete_blocked`).

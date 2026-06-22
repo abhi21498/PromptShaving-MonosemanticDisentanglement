@@ -87,6 +87,20 @@ Streamlit, isolated from the core API. The Next.js app (`apps/web`) remains the
 official product / governance UI; deployment stays Railway-only (no Vercel). See
 [results-dashboard.md](results-dashboard.md).
 
+## Phase 7 — Retention + legal hold + consent-aware memory ✅ (v0.10)
+A retention layer on top of the deletion pipeline: named **retention policy packs**
+(sensitivity tier → window) drive a `retention` worker that soft-deletes expired /
+consent-revoked memory (OFF by default, with an admin-readable decision preview);
+**legal hold** is a fail-closed override that blocks all forgetting (decay,
+archive, retention, compaction) and the API delete route (HTTP 409); **consent**
+withdrawal/expiry makes memory eligible for the normal soft-delete → verification
+→ compaction path. Governance state is metadata-driven (new migration
+`007_retention_legal_hold_consent.sql`) and every action is audited. Honest scope:
+legal hold is a *preservation* control, not crypto-shred. See
+[retention-policies.md](retention-policies.md),
+[phase-gates/phase-15-governance.md](phase-gates/phase-15-governance.md),
+[ADR-013](../infra/adr/ADR-013-retention-legal-hold-consent.md).
+
 ## Public roadmap
 
 | Version | Scope | Status |
@@ -94,8 +108,8 @@ official product / governance UI; deployment stays Railway-only (no Vercel). See
 | v0.7 | Physical deletion compaction + vector purge verification | ✅ Done |
 | v0.8 | Worker runtime + scheduled lifecycle orchestration | ✅ Done |
 | v0.9 | Public results dashboard + evidence explorer | ✅ Done |
-| v0.10 | Retention policies + legal hold + consent-aware memory | ⏳ Next |
-| v0.11 | Assistant SDK + integration examples | ⏳ Planned |
+| v0.10 | Retention policies + legal hold + consent-aware memory | ✅ Done |
+| v0.11 | Assistant SDK + integration examples | ⏳ Next |
 | v0.12 | Hosted demo + public screenshots | ⏳ Planned |
 | v1.0 | Production-ready governed memory runtime | ⏳ Planned |
 

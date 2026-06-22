@@ -54,4 +54,26 @@ Governance requirements covered:
 - deletion and isolation tests
 - UI surfaces for memory governance workflows
 
-This phase remains documentation/governance evidence only. Runtime lifecycle workers, physical vector compaction, and deletion purge verification are deferred to a later lifecycle-worker milestone.
+Runtime lifecycle workers (v0.6), physical vector compaction + deletion purge
+verification (v0.7), and the worker runtime (v0.8) have since landed.
+
+## Retention + legal hold + consent (v0.10)
+
+This phase now also covers enterprise retention governance (ADR-013,
+[retention-policies.md](../retention-policies.md)):
+
+- **Retention policy packs** (sensitivity tier → window) drive a `retention`
+  worker that soft-deletes expired / consent-revoked memory; OFF by default, with
+  an admin-readable decision preview.
+- **Legal hold** is a fail-closed override across the lifecycle (decay, archive,
+  retention, compaction) and the API delete route (HTTP 409) — a *preservation*
+  control for discovery, not crypto-shred.
+- **Consent-aware memory**: withdrawn/expired consent makes memory eligible for
+  the normal soft-delete → verification → compaction path.
+
+Gate evidence: `tests/test_retention_policy.py`, `tests/test_retention_worker.py`,
+`tests/test_legal_hold.py`, `tests/test_governance_flags.py`,
+`tests/test_retention_api.py`, plus retention/legal-hold assertions added to
+`tests/test_deletion.py`, `tests/test_tenant_isolation.py`,
+`tests/test_deletion_compaction_worker.py`, and `tests/test_governance_api.py`.
+Governance state is content-free metadata and every action is audited.

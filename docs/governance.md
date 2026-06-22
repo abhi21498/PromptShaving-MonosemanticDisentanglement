@@ -141,4 +141,25 @@ guaranteed physical erasure. See
 
 - `memory_feedback` captures `helpful | wrong | outdated | sensitive | not_relevant` and feeds the
   decay/reflection workers and the eval golden set.
-- Retention policy, legal hold, and export are documented in [security.md](security.md) as roadmap.
+
+## Retention, legal hold & consent (v0.10)
+
+A retention layer governs *how long* memory is kept and *when* it may be forgotten
+(ADR-013, [retention-policies.md](retention-policies.md)):
+
+- **Retention policy packs** map a memory's sensitivity tier to a retention window
+  (`default` / `strict` / `extended`). The `retention` worker evaluates active
+  memory and soft-deletes whatever has expired or had consent revoked — then the
+  v0.7 deletion-verification + compaction pipeline takes over. It is **OFF by
+  default**; a disabled/dry run records admin-readable decisions but deletes
+  nothing.
+- **Legal hold** is a fail-closed override: held memory is never decayed,
+  archived, retention-deleted, or compacted (its content is *preserved* for
+  discovery), and `DELETE /api/memories/{id}` refuses it with HTTP 409. It is a
+  preservation control, **not** crypto-shred.
+- **Consent-aware memory** records consent (`granted`/`withdrawn`/`expired`/
+  `not_required`); withdrawn or expired consent makes a memory eligible for
+  deletion regardless of age. Pins exempt from decay/archive; protection exempts
+  from retention auto-deletion.
+- Governance state is metadata-driven and every change appends a content-free
+  audit event (invariant #7). The `/api/retention` endpoints are the admin surface.

@@ -80,6 +80,26 @@ def test_archived_memory_is_not_compacted_unless_deleted(repo) -> None:
     assert not is_compacted(row)
 
 
+def test_legal_hold_blocks_compaction(repo) -> None:
+    # v0.10: a deleted memory under legal hold keeps its content + vector material
+    # (preserved for discovery) and is never compacted; the block is audited.
+    from app.db import governance as gov
+    from app.workers.schemas import MEMORY_LEGAL_HOLD_COMPACTION_BLOCKED
+
+    mem = _seed_deleted(repo, content="held for discovery")
+    gov.set_legal_hold(mem, on=True, reason="litigation")
+    repo.update_memory(mem)
+
+    result = DeletionCompactionWorker(repo).run(_ctx())
+
+    row = repo.get_memory("t1", "u1", mem.id)
+    assert row.content == "held for discovery"
+    assert not is_compacted(row)
+    assert result.details["legal_hold_blocked_count"] == 1
+    assert result.details["compacted_count"] == 0
+    assert MEMORY_LEGAL_HOLD_COMPACTION_BLOCKED in _actions(repo)
+
+
 def test_compaction_clears_retrievable_content_and_vector(repo) -> None:
     mem = _seed_deleted(repo, content="my home address is 42 Privet Drive")
     DeletionCompactionWorker(repo).run(_ctx())
