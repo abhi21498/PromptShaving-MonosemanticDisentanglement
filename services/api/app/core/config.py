@@ -82,6 +82,17 @@ class Settings(BaseSettings):
     # touches active/archived rows and never resurrects deleted memory.
     workers_compaction_min_age_days: int = 0
 
+    # Retention policies + legal hold + consent-aware memory (v0.10, ADR-013).
+    # The retention worker evaluates active memory against a named policy pack
+    # (sensitivity tier → retention window) and soft-deletes memory whose window
+    # has elapsed or whose consent was withdrawn/expired — UNLESS it is on legal
+    # hold, pinned, or protected (those override and block all forgetting). The
+    # worker only soft-deletes; the existing deletion-verification + compaction
+    # workers then handle the deleted rows. OFF by default so an unconfigured
+    # run never auto-deletes; opt in per deployment.
+    workers_retention_enabled: bool = False
+    retention_default_policy: str = "default"  # default | strict | extended
+
     # Worker runtime / scheduled lifecycle orchestration (v0.8, ADR-012). The
     # orchestrator runs lifecycle jobs on a schedule for explicit scopes, with a
     # lease (lock) to prevent duplicate concurrent runs, a retry/backoff policy,

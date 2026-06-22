@@ -170,6 +170,41 @@ def test_delete_soft_hides_from_list_but_keeps_forensics(api_client):
     assert detail.json()["status"] == "deleted"
 
 
+def test_delete_blocked_for_legal_hold_memory(api_client):
+    """Legal hold (v0.10) is fail-closed: manual delete is refused with 409."""
+    client, repo = api_client
+    m = _seed(repo)
+
+    held = client.post(
+        "/api/retention/legal-hold",
+        json={"tenant_id": "t1", "user_id": "u1", "memory_id": m.id, "on": True,
+              "reason": "litigation"},
+    )
+    assert held.status_code == 200
+    assert held.json()["governance"]["legal_hold"] is True
+
+    blocked = client.request(
+        "DELETE", f"/api/memories/{m.id}",
+        json={"tenant_id": "t1", "user_id": "u1"},
+    )
+    assert blocked.status_code == 409
+    # Still active (not deleted) and the blocked attempt is audited.
+    assert repo.get_memory("t1", "u1", m.id).status == Status.active
+    actions = {e.action for e in repo.list_audit("t1", "u1", memory_id=m.id)}
+    assert "memory_legal_hold_delete_blocked" in actions
+
+    # Releasing the hold allows deletion again.
+    client.post(
+        "/api/retention/legal-hold",
+        json={"tenant_id": "t1", "user_id": "u1", "memory_id": m.id, "on": False},
+    )
+    ok = client.request(
+        "DELETE", f"/api/memories/{m.id}",
+        json={"tenant_id": "t1", "user_id": "u1"},
+    )
+    assert ok.status_code == 200
+
+
 def test_cannot_patch_deleted_memory(api_client):
     client, repo = api_client
     m = _seed(repo, status=Status.deleted)

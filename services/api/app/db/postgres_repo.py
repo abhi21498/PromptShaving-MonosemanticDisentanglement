@@ -197,6 +197,9 @@ class PostgresRepository(Repository):
             row.confidence = memory.confidence
             row.sensitivity = memory.sensitivity.value
             row.status = memory.status.value
+            # Persist metadata so lifecycle markers (decay/archive) and v0.10
+            # governance state (legal hold, consent, retention) survive updates.
+            row.extra_metadata = memory.metadata
             row.weight = memory.weight
             row.reinforcement_count = memory.reinforcement_count
             row.updated_at = datetime.now(UTC)

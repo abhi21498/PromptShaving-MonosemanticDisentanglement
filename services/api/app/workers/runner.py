@@ -30,12 +30,14 @@ from .deletion_compaction import DeletionCompactionWorker
 from .deletion_verification import DeletionVerificationWorker
 from .lifecycle import LifecycleWorker, WorkerContext
 from .reflection import ReflectionWorker
+from .retention import RetentionWorker
 from .schemas import DEFAULT_JOB_ORDER, WorkerJob, WorkerRunReport
 
 # Job → worker class. Single source of truth for the runner and the CLI.
 _WORKERS: dict[WorkerJob, type[LifecycleWorker]] = {
     WorkerJob.decay: DecayWorker,
     WorkerJob.archive: ArchiveWorker,
+    WorkerJob.retention: RetentionWorker,
     WorkerJob.deletion_compaction: DeletionCompactionWorker,
     WorkerJob.deletion_verification: DeletionVerificationWorker,
     WorkerJob.conflict_scan: ConflictScanWorker,

@@ -366,6 +366,19 @@ the scheduler over explicit `worker_scopes`. See
 [worker-runtime.md](worker-runtime.md), and
 [deletion-compaction.md](deletion-compaction.md).
 
+## Retention layer (v0.10)
+
+A retention layer sits on top of the deletion pipeline (ADR-013,
+[retention-policies.md](retention-policies.md)). A `retention` lifecycle worker
+evaluates active memory against a named policy pack (sensitivity tier → window)
+and soft-deletes expired / consent-revoked memory, which then flows through the
+v0.7 deletion-verification + compaction path. **Legal hold** is a fail-closed
+override that blocks all forgetting (decay/archive/retention/compaction) and the
+API delete route. Governance state (legal hold, consent, pins, protection,
+computed window) is metadata-driven and round-trips on both backends; migration
+`007_retention_legal_hold_consent.sql` adds supporting indexes. The `/api/retention`
+endpoints are the admin surface. Retention auto-deletion is OFF by default.
+
 ## Failure modes considered
 
 - LLM/extractor unavailable → heuristic extractor still produces candidates.

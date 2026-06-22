@@ -108,6 +108,47 @@ def test_worker_runtime_preserves_deletion_guarantee(gateway, repo):
     assert "dark mode" not in str(rec.details)
 
 
+def test_retention_deletion_preserves_deletion_guarantee(gateway, repo):
+    # v0.10: a memory the retention worker soft-deletes (expired window) must obey
+    # the deletion guarantee exactly like any other delete — gone from retrieval
+    # and default listing, never resurrected.
+    from app.db import governance as gov
+    from app.workers.retention import RetentionWorker
+
+    _chat(gateway, "Remember that I prefer dark mode dashboards.")
+    mem = repo.list_memories("t1", "u1")[0]
+    gov.set_consent(mem, status=gov.ConsentStatus.withdrawn)
+    repo.update_memory(mem)
+
+    RetentionWorker(repo, enabled=True).run(_ctx_for(mem))
+
+    assert repo.get_memory("t1", "u1", mem.id).status == Status.deleted
+    assert mem.id not in {m.id for m in repo.retrieve_active("t1", "u1")}
+    assert mem.id not in {m.id for m in repo.list_memories("t1", "u1")}
+
+
+def test_legal_hold_blocks_soft_delete_path(gateway, repo):
+    # v0.10: legal hold is fail-closed — the retention worker never deletes a held
+    # memory, so the active row survives even when otherwise eligible.
+    from app.db import governance as gov
+    from app.workers.retention import RetentionWorker
+
+    _chat(gateway, "Remember that I prefer dark mode dashboards.")
+    mem = repo.list_memories("t1", "u1")[0]
+    gov.set_consent(mem, status=gov.ConsentStatus.withdrawn)
+    gov.set_legal_hold(mem, on=True, reason="hold")
+    repo.update_memory(mem)
+
+    RetentionWorker(repo, enabled=True).run(_ctx_for(mem))
+    assert repo.get_memory("t1", "u1", mem.id).status == Status.active
+
+
+def _ctx_for(mem):
+    from app.workers.lifecycle import WorkerContext
+
+    return WorkerContext(tenant_id=mem.tenant_id, user_id=mem.user_id)
+
+
 def test_loop_traces_do_not_resurrect_deleted_memory(gateway, repo):
     # v0.3.1: loop runs/events are operational evidence stored alongside the
     # write path. They must never re-expose a soft-deleted memory in retrieval.

@@ -41,9 +41,10 @@ wrapped by Security, Governance, Observability, Reliability, Evaluation planes.
   (default `stub`). LLM output is **advisory**: the policy broker stays authoritative
   and is never bypassed. Tests need no API keys. See ADR-008.
 - `services/api/app/workers` — background memory lifecycle workers (v0.6–v0.7). Off
-  the chat request path. Six jobs: decay, archive, deletion_compaction,
-  deletion_verification, conflict_scan, reflection (off by default), driven by
-  `runner.py` (`python -m app.workers.runner --tenant T --user U --job all`).
+  the chat request path. Seven jobs: decay, archive, retention, deletion_compaction,
+  deletion_verification, conflict_scan, reflection (retention + reflection off by
+  default), driven by `runner.py`
+  (`python -m app.workers.runner --tenant T --user U --job all`).
   Tenant scoped, idempotent, retry-safe, audited; never resurrect deleted memory;
   policy broker stays authoritative. `deletion_compaction` (v0.7) clears
   soft-deleted memory's content + vector material after a retention window,
@@ -57,6 +58,14 @@ wrapped by Security, Governance, Observability, Reliability, Evaluation planes.
     (`worker_runs`, migration 006) and a `GET /healthz/workers` view. Scopes are
     explicit (`worker_scopes`). `services/worker/main.py` runs the scheduler.
     See ADR-012 and `docs/worker-runtime.md`.
+  - v0.10 retention layer: `app/services/retention.py` (policy packs: sensitivity
+    tier → window) + `app/workers/retention.py` (`retention` job) soft-delete
+    expired / consent-revoked memory (OFF by default). **Legal hold** (fail-closed)
+    blocks all forgetting + the API delete route; consent withdrawal/expiry drives
+    eligibility; pins/protection exempt. Governance state is metadata-driven
+    (`app/db/governance.py`, migration 007), audited, and surfaced at
+    `/api/retention/*` (`app/routes/retention.py`). Legal hold is a *preservation*
+    control, not crypto-shred. See ADR-013, `docs/retention-policies.md`.
 - `services/api/app/db` — repository abstraction. `MEMORYOPS_STORAGE=memory|postgres`. Vector
   retrieval goes through `Repository.search_candidates` (pgvector on Postgres, cosine in memory).
 - `infra/db/migrations` — SQL schema (Postgres + pgvector). RLS is **enforced** in

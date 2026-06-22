@@ -22,6 +22,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from ..core.config import get_settings
+from ..db import governance as gov
 from ..db.entities import StoredMemory
 from ..db.repository import Repository
 from ..schemas.memory import Status
@@ -33,8 +34,6 @@ from .schemas import (
     WorkerJob,
     WorkerJobResult,
 )
-
-_PROTECTED_FLAGS = ("pinned", "protected")
 
 
 class ArchiveWorker(LifecycleWorker):
@@ -59,7 +58,8 @@ class ArchiveWorker(LifecycleWorker):
 
     @staticmethod
     def _is_protected(memory: StoredMemory) -> bool:
-        return any(bool(memory.metadata.get(flag)) for flag in _PROTECTED_FLAGS)
+        # Pinned / protected (v0.6) and legal hold (v0.10) all exempt from archive.
+        return gov.is_pinned(memory) or gov.is_protected(memory) or gov.is_legal_hold(memory)
 
     def _recently_used(self, memory: StoredMemory, now: datetime) -> bool:
         meta = lifecycle_meta(memory)

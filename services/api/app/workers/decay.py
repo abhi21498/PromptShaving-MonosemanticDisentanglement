@@ -13,6 +13,7 @@ reads active rows only) and is therefore never modified or resurrected.
 from __future__ import annotations
 
 from ..core.config import get_settings
+from ..db import governance as gov
 from ..db.repository import Repository
 from ..services.audit import AuditService
 from .lifecycle import LifecycleWorker, WorkerContext, age_days, lifecycle_meta, set_lifecycle_meta
@@ -50,6 +51,10 @@ class DecayWorker(LifecycleWorker):
     def _execute(self, ctx: WorkerContext, result: WorkerJobResult) -> None:
         for memory in self._active_memories(ctx):
             result.scanned_count += 1
+            # Legal hold (v0.10) freezes a memory: never decay held material.
+            if gov.is_legal_hold(memory):
+                result.skipped_count += 1
+                continue
             meta = lifecycle_meta(memory)
             if meta.get("decayed"):
                 result.skipped_count += 1  # idempotent: already decayed

@@ -260,8 +260,8 @@ RULES: list[Rule] = [
         r"^services/api/app/workers/",
         r"^services/api/tests/test_(lifecycle_worker|decay_worker|archive_worker"
         r"|deletion_verification_worker|deletion_compaction_worker|conflict_scan_worker"
-        r"|worker_idempotency|worker_orchestrator|worker_locks|worker_retry"
-        r"|worker_health)\.py$",
+        r"|retention_worker|legal_hold|worker_idempotency|worker_orchestrator"
+        r"|worker_locks|worker_retry|worker_health)\.py$",
         "Background worker code changed without worker tests (tests/test_*_worker.py "
         "or test_worker_*.py).",
     ),
@@ -302,7 +302,9 @@ RULES: list[Rule] = [
         r"^(docs/phase-gates/phase-12-background-lifecycle-workers\.md$"
         r"|infra/adr/ADR-010-background-memory-lifecycle-workers\.md$"
         r"|docs/phase-gates/phase-13-deletion-compaction-vector-purge\.md$"
-        r"|infra/adr/ADR-011-physical-deletion-compaction-vector-purge\.md$)",
+        r"|infra/adr/ADR-011-physical-deletion-compaction-vector-purge\.md$"
+        r"|docs/phase-gates/phase-15-governance\.md$"
+        r"|infra/adr/ADR-013-retention-legal-hold-consent\.md$)",
         "Background worker runner changed without phase-gate or ADR evidence.",
     ),
     # ── v0.7 Physical deletion compaction + vector purge verification (ADR-011) ─
@@ -341,7 +343,9 @@ RULES: list[Rule] = [
         "deletion-compaction-adr",
         r"^services/api/app/workers/deletion_compaction\.py$|^services/api/app/workers/vector_purge\.py$",
         r"^(infra/adr/ADR-011-physical-deletion-compaction-vector-purge\.md$"
-        r"|docs/phase-gates/phase-13-deletion-compaction-vector-purge\.md$)",
+        r"|docs/phase-gates/phase-13-deletion-compaction-vector-purge\.md$"
+        r"|infra/adr/ADR-013-retention-legal-hold-consent\.md$"
+        r"|docs/phase-gates/phase-15-governance\.md$)",
         "Physical deletion compaction semantics changed without ADR-011 or phase-13 gate "
         "evidence.",
     ),
@@ -400,6 +404,40 @@ RULES: list[Rule] = [
         r"|docs/phase-gates/phase-14-worker-runtime-orchestration\.md$)",
         "Worker orchestration/scheduling semantics changed without ADR-012 or phase-14 "
         "gate evidence.",
+    ),
+    # ── v0.10 Retention + legal hold + consent-aware memory (ADR-013) ──────────
+    Rule(
+        "Memory Correctness",
+        "retention-engine-tests",
+        r"^services/api/app/services/retention\.py$|^services/api/app/db/governance\.py$",
+        r"^services/api/tests/test_(retention_policy|retention_worker|governance_flags"
+        r"|legal_hold)\.py$",
+        "Retention engine / governance state changed without retention or governance-flag "
+        "tests.",
+    ),
+    Rule(
+        "Security",
+        "retention-worker-tests",
+        r"^services/api/app/workers/retention\.py$",
+        r"^services/api/tests/test_(retention_worker|legal_hold)\.py$",
+        "Retention worker changed without retention-worker or legal-hold tests.",
+    ),
+    Rule(
+        "Security",
+        "legal-hold-governance-docs",
+        r"^services/api/app/db/governance\.py$|^services/api/app/services/retention\.py$",
+        r"^(docs/retention-policies\.md$|docs/governance\.md$|docs/security\.md$"
+        r"|infra/adr/ADR-013-retention-legal-hold-consent\.md$)",
+        "Retention / legal hold / consent code changed without updating retention / "
+        "governance / security docs or ADR-013.",
+    ),
+    Rule(
+        "Docs/ADR",
+        "retention-adr",
+        r"^services/api/app/workers/retention\.py$|^services/api/app/services/retention\.py$",
+        r"^(infra/adr/ADR-013-retention-legal-hold-consent\.md$"
+        r"|docs/phase-gates/phase-15-governance\.md$)",
+        "Retention semantics changed without ADR-013 or phase-15 governance gate evidence.",
     ),
 ]
 
