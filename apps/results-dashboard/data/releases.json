@@ -1,0 +1,94 @@
+{
+  "project": "MemoryOps AI",
+  "tagline": "Governed memory infrastructure for AI assistants.",
+  "current_version": "v0.8",
+  "next_version": "v0.9",
+  "repo_url": "https://github.com/patibandlavenkatamanideep/MemoryOps-AI",
+  "core_promise": "Memory is not a database. Memory is a governed decision system that decides what information is valuable enough to carry into the future.",
+  "releases": [
+    {
+      "version": "v0.1",
+      "title": "Governed Memory Path",
+      "status": "Released",
+      "summary": "Capture, policy evaluation, typed storage, retrieval, and audit on the write/read path.",
+      "highlights": ["Write path: Extractor -> Policy Broker -> Write Service", "Read path: Retriever -> Ranker -> Composer", "Audit log on every lifecycle action"]
+    },
+    {
+      "version": "v0.2",
+      "title": "Agentic Governance Layer",
+      "status": "Released",
+      "summary": "Operator/developer skills and phase gates wrapping the core.",
+      "highlights": ["Hermes operator skills", "agentic-swe-kit phase gates", "PR invariant evidence gate"]
+    },
+    {
+      "version": "v0.2.1",
+      "title": "Context Compression",
+      "status": "Released",
+      "summary": "Optional context compression at the LLM boundary, after governance.",
+      "highlights": ["NoopCompressor default", "HeadroomCompressor optional + degrades to no-op", "Runs after policy/composition, never before policy broker"]
+    },
+    {
+      "version": "v0.3",
+      "title": "pgvector + Tenant Isolation",
+      "status": "Released",
+      "summary": "Vector retrieval on Postgres with enforced row-level security.",
+      "highlights": ["pgvector candidate search", "RLS FORCE + tenant policy", "scripts/check_rls_policies.py"]
+    },
+    {
+      "version": "v0.3.1",
+      "title": "Loop Engineering",
+      "status": "Released",
+      "summary": "Memory workflows modeled as Observe -> Decide -> Act -> Verify -> Audit -> Learn loops.",
+      "highlights": ["Six primary loops", "Validated state transitions", "/api/loops operational timelines"]
+    },
+    {
+      "version": "v0.3.2",
+      "title": "Railway Deployment Alignment",
+      "status": "Released",
+      "summary": "One Railway project, five services. No Vercel.",
+      "highlights": ["web/api/worker + Postgres + Redis", "Canonical docs/deployment/railway.md", "Phase 13 infrastructure gate"]
+    },
+    {
+      "version": "v0.4",
+      "title": "Provider LLM Adapters",
+      "status": "Released",
+      "summary": "Swappable, provider-neutral LLM layer powering structured extraction.",
+      "highlights": ["StubProvider default (no keys needed)", "Optional OpenAI/Anthropic/Gemini adapters", "LLM output is advisory; policy broker stays authoritative"]
+    },
+    {
+      "version": "v0.5",
+      "title": "Governance UI / Memory Control Plane",
+      "status": "Released",
+      "summary": "Next.js admin/governance UI over the memory lifecycle.",
+      "highlights": ["Chat, memories, governance, audit, loops, admin views", "Memory control plane", "Official product UI"]
+    },
+    {
+      "version": "v0.6",
+      "title": "Background Lifecycle Workers",
+      "status": "Released",
+      "summary": "Six background jobs off the chat request path.",
+      "highlights": ["decay, archive, conflict_scan, reflection", "deletion_compaction, deletion_verification", "Tenant scoped, idempotent, retry-safe, audited"]
+    },
+    {
+      "version": "v0.7",
+      "title": "Deletion Compaction + Vector Purge Verification",
+      "status": "Released",
+      "summary": "Clears soft-deleted content + vector material after a retention window; preserves the tombstone; verifies the purge fail-closed.",
+      "highlights": ["Content + vector compaction", "Governance tombstone preserved", "Not crypto-shred / no physical disk reclamation claim"]
+    },
+    {
+      "version": "v0.8",
+      "title": "Railway Worker Runtime + Scheduled Lifecycle Orchestration",
+      "status": "Released",
+      "summary": "Makes lifecycle jobs operable: leases, retries/backoff, dead-letter, run history, health view.",
+      "highlights": ["worker_runs history (migration 006)", "GET /healthz/workers", "Explicit tenant:user scopes"]
+    },
+    {
+      "version": "v0.9",
+      "title": "Public Results Dashboard + Evidence Explorer",
+      "status": "In progress",
+      "summary": "Read-only public evidence/demo dashboard making the system understandable and inspectable.",
+      "highlights": ["Streamlit results viewer (demo-only)", "Static/demo JSON artifacts", "Next.js remains the official product UI"]
+    }
+  ]
+}

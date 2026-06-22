@@ -82,6 +82,7 @@ enforced.
 ```text
 memoryops-ai/
   apps/web/            Next.js frontend (chat, memories, governance, audit, loops, admin, architecture)
+  apps/results-dashboard/ Public read-only Streamlit results/evidence dashboard (demo-only; v0.9)
   services/api/        FastAPI backend (gateway, extractor, policy broker, write/read path, audit)
   services/worker/     Background jobs (decay, reflection, conflict resolution, compression)
   packages/shared/     Shared types
@@ -370,17 +371,30 @@ MemoryOps integrates it via an adapter and does not vendor its source.
 - See [docs/worker-runtime.md](docs/worker-runtime.md) and
   [ADR-012](infra/adr/ADR-012-worker-runtime-orchestration.md).
 
+## What works as of v0.9 (public results dashboard + evidence explorer)
+
+- A **read-only public results dashboard** ([`apps/results-dashboard/`](apps/results-dashboard))
+  built with Streamlit makes MemoryOps understandable and inspectable: overview,
+  version timeline, memory lifecycle, **deletion compaction proof**, worker
+  runtime results, audit evidence, validation results, and honest limitations.
+- It is **demo/evidence UI only** — static demo JSON, no live DB, no secrets, no
+  auth, no writes. The Next.js app in `apps/web` remains the official product UI.
+- Run it with `cd apps/results-dashboard && pip install -r requirements.txt &&
+  streamlit run app.py`. See [docs/results-dashboard.md](docs/results-dashboard.md).
+
 ## Roadmap
 
 - **v0.7** — physical deletion compaction + vector purge verification ✅
 - **v0.8** — worker runtime + scheduled lifecycle orchestration ✅
-- **v0.9** — retention policies + legal hold + consent-aware memory
-- **v0.10** — assistant SDK + example apps
+- **v0.9** — public results dashboard + evidence explorer ✅
+- **v0.10** — retention policies + legal hold + consent-aware memory
+- **v0.11** — assistant SDK + integration examples
+- **v0.12** — hosted demo + public screenshots
 - **v1.0** — production-ready governed memory runtime
 
-## What remains (v0.9+)
+## What remains (v0.10+)
 
-- Retention windows, legal hold, consent-aware capture (v0.9).
+- Retention windows, legal hold, consent-aware capture (v0.10).
 - Hard purge / crypto-shred and pgvector index reclamation (beyond v0.7's
   auditable compaction).
 - Optional queue/cron backend behind the orchestrator interface; auto-discovered
@@ -424,5 +438,6 @@ system with release discipline, review gates, and operational safety. Overview:
 - [docs/security.md](docs/security.md) — tenant isolation, secret detection, deletion guarantee.
 - [docs/governance.md](docs/governance.md) — lifecycle, approvals, audit, retention.
 - [docs/rollout.md](docs/rollout.md) — phased delivery and production roadmap.
+- [docs/results-dashboard.md](docs/results-dashboard.md) — public read-only results/evidence dashboard (v0.9; demo-only, not production UI).
 - [docs/demo-script.md](docs/demo-script.md) — the 6-step demo.
 - [infra/adr/](infra/adr/) — storage, retrieval, policy broker, observability, deletion ADRs.

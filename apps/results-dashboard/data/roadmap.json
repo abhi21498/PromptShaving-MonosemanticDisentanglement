@@ -1,0 +1,19 @@
+{
+  "milestones": [
+    {"version": "v0.8", "title": "Railway Worker Runtime + Scheduled Lifecycle Orchestration", "status": "Released", "goal": "Make lifecycle jobs operable (leases, retries, dead-letter, run history)."},
+    {"version": "v0.9", "title": "Public Results Dashboard + Evidence Explorer", "status": "In progress", "goal": "Make MemoryOps understandable and inspectable publicly."},
+    {"version": "v0.10", "title": "Retention Policies + Legal Hold + Consent-Aware Memory", "status": "Planned", "goal": "Add enterprise retention rules on top of lifecycle/deletion infrastructure."},
+    {"version": "v0.11", "title": "Assistant SDK + Integration Examples", "status": "Planned", "goal": "Make MemoryOps easier for other builders to adopt."},
+    {"version": "v0.12", "title": "Hosted Demo + Public Screenshots", "status": "Planned", "goal": "Make the project easy to understand without cloning."},
+    {"version": "v1.0", "title": "Governed Memory Runtime for AI Assistants", "status": "Planned", "goal": "Stable public release."}
+  ],
+  "limitations": [
+    "Deletion compaction is NOT crypto-shred.",
+    "No physical disk/page erasure guarantee.",
+    "No full pgvector VACUUM/reindex orchestration yet.",
+    "No cross-tenant scheduler until later.",
+    "This Streamlit dashboard is demo-only and read-only.",
+    "The Next.js app remains the official product / admin governance UI.",
+    "Dashboard reads static demo JSON - it never connects to production secrets or real user data."
+  ]
+}

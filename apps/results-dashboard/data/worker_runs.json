@@ -1,0 +1,77 @@
+{
+  "note": "Demo snapshot mirroring the worker_runs table shape (migration 006). Counts only - never memory content.",
+  "jobs": [
+    {"job": "decay", "description": "Apply time-based decay to stale memory importance.", "default_on": true},
+    {"job": "archive", "description": "Move cold memory out of the active set.", "default_on": true},
+    {"job": "conflict_scan", "description": "Detect conflicting / superseding memories.", "default_on": true},
+    {"job": "deletion_verification", "description": "Confirm soft-deleted memory is not retrievable.", "default_on": true},
+    {"job": "deletion_compaction", "description": "Clear content + vector material after the retention window.", "default_on": true},
+    {"job": "reflection", "description": "Summarize/condense memory (off by default).", "default_on": false}
+  ],
+  "job_results": [
+    {"job": "decay", "scanned_count": 48, "changed_count": 9, "verified_count": 0, "skipped_count": 39, "failed_count": 0, "audit_events": 9},
+    {"job": "archive", "scanned_count": 48, "changed_count": 3, "verified_count": 0, "skipped_count": 45, "failed_count": 0, "audit_events": 3},
+    {"job": "conflict_scan", "scanned_count": 48, "changed_count": 2, "verified_count": 0, "skipped_count": 46, "failed_count": 0, "audit_events": 4},
+    {"job": "deletion_verification", "scanned_count": 6, "changed_count": 0, "verified_count": 6, "skipped_count": 0, "failed_count": 0, "audit_events": 6},
+    {"job": "deletion_compaction", "scanned_count": 12, "changed_count": 4, "verified_count": 4, "skipped_count": 8, "failed_count": 0, "audit_events": 16},
+    {"job": "reflection", "scanned_count": 0, "changed_count": 0, "verified_count": 0, "skipped_count": 0, "failed_count": 0, "audit_events": 0}
+  ],
+  "runs": [
+    {
+      "id": "run-1001",
+      "tenant_id": "demo-tenant",
+      "user_id": "demo-user",
+      "status": "completed",
+      "jobs": ["decay", "archive", "conflict_scan", "deletion_verification", "deletion_compaction"],
+      "attempts": 1,
+      "scanned_count": 162,
+      "changed_count": 18,
+      "skipped_count": 138,
+      "error_count": 0,
+      "owner": "scheduler@worker-1",
+      "trace_id": "trace-9f2c",
+      "started_at": "2026-06-21T11:20:00Z",
+      "completed_at": "2026-06-21T11:20:43Z"
+    },
+    {
+      "id": "run-1000",
+      "tenant_id": "demo-tenant",
+      "user_id": "demo-user",
+      "status": "completed",
+      "jobs": ["decay", "archive", "conflict_scan", "deletion_verification", "deletion_compaction"],
+      "attempts": 2,
+      "scanned_count": 158,
+      "changed_count": 11,
+      "skipped_count": 147,
+      "error_count": 0,
+      "owner": "scheduler@worker-1",
+      "trace_id": "trace-7a18",
+      "started_at": "2026-06-20T11:20:00Z",
+      "completed_at": "2026-06-20T11:20:51Z"
+    },
+    {
+      "id": "run-0999",
+      "tenant_id": "demo-tenant",
+      "user_id": "demo-user",
+      "status": "dead_letter",
+      "jobs": ["decay", "archive"],
+      "attempts": 3,
+      "scanned_count": 0,
+      "changed_count": 0,
+      "skipped_count": 0,
+      "error_count": 1,
+      "owner": "scheduler@worker-1",
+      "trace_id": "trace-5d04",
+      "error": "transient storage timeout (retries exhausted; dead-lettered for inspection)",
+      "started_at": "2026-06-19T11:20:00Z",
+      "completed_at": "2026-06-19T11:21:12Z"
+    }
+  ],
+  "runtime_features": [
+    "Lease/lock prevents duplicate concurrent runs of the same scope.",
+    "Retry with backoff absorbs transient faults.",
+    "Exhausted retries dead-letter the run for inspection.",
+    "Run history is persisted (worker_runs) and exposed via GET /healthz/workers.",
+    "Scopes are explicit 'tenant:user' pairs."
+  ]
+}

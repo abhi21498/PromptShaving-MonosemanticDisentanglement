@@ -1,0 +1,30 @@
+{
+  "memory_id": "11111111-2222-3333-4444-555555555555",
+  "tenant_id": "demo-tenant",
+  "user_id": "demo-user",
+  "retention_window_days": 30,
+  "before": {
+    "status": "deleted",
+    "content": "User prefers X",
+    "embedding_present": true,
+    "tombstone_present": true,
+    "compacted_at": null,
+    "purge_verification": null
+  },
+  "after": {
+    "status": "deleted",
+    "content": null,
+    "embedding_present": false,
+    "tombstone_present": true,
+    "compacted_at": "2026-06-21T11:20:42Z",
+    "purge_verification": "passed"
+  },
+  "labels": [
+    {"phase": "Logical deletion", "result": "unreachable", "detail": "status='deleted' rows are never retrieved."},
+    {"phase": "Compaction", "result": "payload cleared", "detail": "Content and vector material removed after the retention window."},
+    {"phase": "Vector purge verification", "result": "candidate path checked", "detail": "Verifies the memory cannot be returned from the candidate/search path. Fail-closed."},
+    {"phase": "Tombstone", "result": "preserved", "detail": "Governance tombstone retained for audit and idempotency."},
+    {"phase": "Audit", "result": "recorded", "detail": "Each step appends a content-safe audit event."}
+  ],
+  "scope_note": "Auditable content/vector compaction + retrieval-exclusion verification. NOT crypto-shred and NOT a guarantee of physical disk/page reclamation."
+}

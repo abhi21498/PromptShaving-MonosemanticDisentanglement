@@ -1,0 +1,41 @@
+{
+  "note": "Validation summaries captured from local runs against the demo build. Numbers are illustrative evidence snapshots, not a live CI feed.",
+  "latest": {
+    "version": "v0.9",
+    "pytest": "206 passed, 1 skipped",
+    "ruff": "All checks passed",
+    "evals": "PASS (all invariants hold, pass rate >= 80%)",
+    "pr_invariant_gate": "No rules armed (dashboard is docs/app-only)",
+    "loop_evidence": {
+      "memory_write_loop": "pass",
+      "memory_read_loop": "pass",
+      "governance_loop": "pass",
+      "release_gate_loop": "pass"
+    }
+  },
+  "history": [
+    {
+      "version": "v0.7",
+      "pytest": "183 passed, 1 skipped",
+      "ruff": "All checks passed",
+      "evals": "PASS",
+      "pr_invariant_gate": "12 rules satisfied"
+    },
+    {
+      "version": "v0.8",
+      "pytest": "206 passed, 1 skipped",
+      "ruff": "All checks passed",
+      "evals": "PASS",
+      "pr_invariant_gate": "Satisfied; worker runtime merged",
+      "release": "Published"
+    },
+    {
+      "version": "v0.9",
+      "pytest": "206 passed, 1 skipped",
+      "ruff": "All checks passed",
+      "evals": "PASS",
+      "pr_invariant_gate": "No backend rules armed (dashboard-only change)",
+      "release": "Drafted (not tagged)"
+    }
+  ]
+}
