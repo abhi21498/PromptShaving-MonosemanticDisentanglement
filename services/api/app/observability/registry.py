@@ -222,6 +222,10 @@ POLICY_DECISIONS_TOTAL = REGISTRY.counter(
     "memoryops_policy_decisions_total",
     "Policy broker decisions, by decision (SAVE|BLOCK|...). BLOCK/total = block rate.",
 )
+ADMISSION_DECISIONS_TOTAL = REGISTRY.counter(
+    "memoryops_admission_decisions_total",
+    "Context admission gate decisions, by decision (ALLOW|BLOCK_*). Read-path, per memory.",
+)
 TOKENS_TOTAL = REGISTRY.counter(
     "memoryops_tokens_total",
     "Estimated tokens processed, by kind (embedding|context|compressed|saved|llm_input) and model.",

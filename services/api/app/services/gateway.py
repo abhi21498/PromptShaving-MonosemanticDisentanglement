@@ -22,15 +22,22 @@ from ..economics import build_request_economics
 from ..llm import detect_conflicts, get_llm_provider
 from ..loops.events import complete_loop_run_sync, emit_loop_event_sync, start_loop_run_sync
 from ..loops.types import LoopId, LoopState, LoopStatus
-from ..observability import observe_economics, observe_retrieval, record_policy_decision
+from ..observability import (
+    observe_economics,
+    observe_retrieval,
+    record_admission_decision,
+    record_policy_decision,
+)
 from ..schemas.memory import (
     ChatRequest,
     ChatResponse,
     Compression,
     Economics,
+    MemoryUsageTrace,
     Source,
     UsedMemory,
 )
+from .admission_gate import AdmissionGate, AdmissionResult
 from .audit import AuditService
 from .context_composer import ContextComposer
 from .extractor import Extractor
@@ -51,6 +58,7 @@ class Gateway:
         self._writer = WriteService(repo, self._audit)
         self._retriever = Retriever(repo)
         self._ranker = Ranker()
+        self._admission_gate = AdmissionGate()
         self._composer = ContextComposer()
         self._compressor = get_compressor()
         self._llm = get_llm()
@@ -129,24 +137,62 @@ class Gateway:
             evidence={"tenant_scoped": True, "user_scoped": True, "active_only": True},
         )
 
-        def _read() -> tuple[str, list[UsedMemory], str]:
+        def _read() -> tuple[str, list[UsedMemory], str, AdmissionResult | None]:
             result = self._retriever.retrieve(req.tenant_id, req.user_id, req.message)
             ranked = self._ranker.rank(result.candidates)
-            block, used = self._composer.compose(ranked)
-            return block, used, result.mode
+            # Context Admission Gate (v1.3, ADR-017): permissioned entry into
+            # context. Runs after rank / before compose; only ALLOW memories are
+            # composed (or all, in observe-only mode). Defense-in-depth: it only
+            # ever removes memory, never adds.
+            admission = self._admission_gate.evaluate(
+                ranked, tenant_id=req.tenant_id, user_id=req.user_id
+            )
+            block, used = self._composer.compose(admission.admitted)
+            return block, used, result.mode, admission
 
         _read_start = time.monotonic()
-        context_block, used_memories, retrieval_mode = safe_call(
-            _read, default=("", [], "none"), label="retrieval"
+        context_block, used_memories, retrieval_mode, admission = safe_call(
+            _read, default=("", [], "none", None), label="retrieval"
         )
         observe_retrieval(retrieval_mode, (time.monotonic() - _read_start) * 1000)
+
+        # ── Admission accounting: metrics, audit, and the memory usage trace ────
+        trace: MemoryUsageTrace | None = None
+        if admission is not None:
+            for record in admission.records:
+                record_admission_decision(record.decision.value)
+            blocked = admission.blocked_records
+            if blocked:
+                self._audit.record(
+                    tenant_id=req.tenant_id,
+                    user_id=req.user_id,
+                    action="context_admission_blocked",
+                    reason=f"{len(blocked)} memory(ies) denied context admission",
+                    trace_id=trace_id,
+                    metadata={
+                        "blocked_count": len(blocked),
+                        "decisions": admission.counts(),
+                        "blocked_memory_ids": [r.memory.id for r in blocked],
+                    },
+                )
+            if get_app_settings().memory_trace_enabled:
+                trace = MemoryUsageTrace(
+                    response_id=trace_id,
+                    memories_used=[r.to_trace_entry() for r in admission.admitted_records],
+                    memories_blocked=[r.to_trace_entry() for r in blocked],
+                    admission_counts=admission.counts(),
+                )
         emit_loop_event_sync(
             self._repo,
             read_loop,
             LoopState.EXECUTED,
             event_type="memory_read_executed",
-            reason="retrieval, ranking, and context composition executed",
-            evidence={"used_memory_count": len(used_memories), "retrieval_mode": retrieval_mode},
+            reason="retrieval, ranking, admission, and context composition executed",
+            evidence={
+                "used_memory_count": len(used_memories),
+                "retrieval_mode": retrieval_mode,
+                "admission_decisions": admission.counts() if admission is not None else {},
+            },
         )
         read_audit_id: str | None = None
         if used_memories:
@@ -440,6 +486,7 @@ class Gateway:
             retrieval_mode=retrieval_mode,
             compression=compression,
             economics=economics,
+            trace=trace,
             loop_evidence={
                 "memory.read": read_status.value,
                 "memory.write": LoopStatus.COMPLETED.value,

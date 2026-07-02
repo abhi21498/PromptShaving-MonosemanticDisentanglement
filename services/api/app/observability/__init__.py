@@ -11,6 +11,7 @@ from .instrument import (
     observe_economics,
     observe_http,
     observe_retrieval,
+    record_admission_decision,
     record_policy_decision,
 )
 from .registry import REGISTRY, render_prometheus
@@ -21,6 +22,7 @@ __all__ = [
     "observe_http",
     "observe_retrieval",
     "record_policy_decision",
+    "record_admission_decision",
     "observe_economics",
     "collect_worker_gauges",
 ]
