@@ -133,7 +133,32 @@ def page_capture() -> None:
              for c in result.candidate_memories],
             use_container_width=True, hide_index=True,
         )
-    if result.used_memories:
+    # Memory Usage Trace (v1.3, ADR-017): the permissioned, explainable memory
+    # trail behind the answer — why each memory was (or wasn't) allowed in.
+    trace = result.trace
+    if trace is not None and (trace.memories_used or trace.memories_blocked):
+        st.markdown("**Memory usage trace** — why each memory was allowed into the answer:")
+        if trace.admission_counts:
+            st.caption("admission decisions: "
+                       + " · ".join(f"{k} = {v}" for k, v in trace.admission_counts.items()))
+        if trace.memories_used:
+            st.markdown("_Admitted into context:_")
+            st.dataframe(
+                [{"memory": e.content_preview, "decision": e.admission_decision,
+                  "why": e.admission_reason, "consent": e.consent_status,
+                  "retention": e.retention_status, "score": round(e.retrieval_score, 3)}
+                 for e in trace.memories_used],
+                use_container_width=True, hide_index=True,
+            )
+        if trace.memories_blocked:
+            st.markdown("_Retrieved but **blocked** from context:_")
+            st.dataframe(
+                [{"memory": e.content_preview, "decision": e.admission_decision,
+                  "why": e.admission_reason, "consent": e.consent_status,
+                  "retention": e.retention_status} for e in trace.memories_blocked],
+                use_container_width=True, hide_index=True,
+            )
+    elif result.used_memories:
         st.markdown("**Memories used to answer:**")
         st.dataframe(
             [{"content": u.content, "score": round(u.score, 3)} for u in result.used_memories],

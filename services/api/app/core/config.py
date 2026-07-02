@@ -31,6 +31,20 @@ class Settings(BaseSettings):
     # '{"gpt-4o-mini":{"input":0.15,"output":0.6}}'). USD per 1M tokens.
     pricing_overrides_json: str = ""
 
+    # Context Admission Gate + Memory Usage Trace (v1.3, ADR-017). The gate runs
+    # after rank / before compose and decides, per memory, whether it is *allowed*
+    # into context (not merely relevant) — emitting an explainable admission trace.
+    # Conservative defaults preserve behavior: deleted/archived/expired/
+    # consent-withdrawn/wrong-tenant are blocked (all defense-in-depth; the
+    # repository already filters non-active rows), while the two stricter gates
+    # below are OFF by default. `admission_gate_enabled=False` runs the gate in
+    # observe-only (shadow) mode: decisions are still traced but nothing is removed.
+    admission_gate_enabled: bool = True
+    memory_trace_enabled: bool = True
+    # Opt-in stricter gates (default OFF → behavior-preserving):
+    admission_block_sensitive: bool = False  # block sensitivity='high' from context
+    admission_min_score: float = 0.0  # block ranked score below this (0 = disabled)
+
     # Storage backend: "memory" runs with no infra (default for dev/tests),
     # "postgres" uses SQLAlchemy + pgvector.
     storage: Literal["memory", "postgres"] = "memory"
@@ -139,6 +153,16 @@ def get_settings() -> Settings:
         overrides["metrics_enabled"] = val.lower() not in ("0", "false", "no")
     if (val := os.getenv("MEMORYOPS_PRICING_OVERRIDES")) is not None:
         overrides["pricing_overrides_json"] = val
+    # v1.2 Context Admission Gate knobs (ADR-017). Public operator toggles.
+    if (val := os.getenv("MEMORYOPS_ADMISSION_GATE")) is not None:
+        overrides["admission_gate_enabled"] = val.lower() not in ("0", "false", "no")
+    if (val := os.getenv("MEMORYOPS_MEMORY_TRACE")) is not None:
+        overrides["memory_trace_enabled"] = val.lower() not in ("0", "false", "no")
+    if (val := os.getenv("MEMORYOPS_ADMISSION_BLOCK_SENSITIVE")) is not None:
+        overrides["admission_block_sensitive"] = val.lower() not in ("0", "false", "no")
+    if (val := os.getenv("MEMORYOPS_ADMISSION_MIN_SCORE")) is not None:
+        with contextlib.suppress(ValueError):
+            overrides["admission_min_score"] = float(val)
     if (val := os.getenv("MEMORYOPS_STORAGE")) in ("memory", "postgres"):
         overrides["storage"] = val
     if (val := os.getenv("MEMORYOPS_EMBEDDING_PROVIDER")) in ("stub", "heuristic", "openai"):

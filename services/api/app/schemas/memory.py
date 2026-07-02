@@ -102,6 +102,43 @@ class UsedMemory(BaseModel):
     source: Source = Field(default_factory=Source)
 
 
+# ── Memory Usage Trace (v1.3, ADR-017) ────────────────────────────────────────
+class MemoryTraceEntry(BaseModel):
+    """One retrieved memory's admission verdict + provenance for a chat turn.
+
+    Content is surfaced as a short preview only; the caller already owns the
+    tenant scope (same trust boundary as ``used_memories``).
+    """
+
+    memory_id: str
+    memory_type: MemoryType
+    content_preview: str
+    source: Source
+    stored_at: datetime
+    status: Status
+    sensitivity: Sensitivity
+    consent_status: str
+    retention_status: str  # active | expired | exempt | none
+    admission_decision: str  # ALLOW | BLOCK_*
+    admission_reason: str
+    retrieval_score: float
+    score_breakdown: dict[str, float] = Field(default_factory=dict)
+
+
+class MemoryUsageTrace(BaseModel):
+    """The full memory trail behind one answer (invariant #8, ADR-017).
+
+    Explains *why each memory was (or was not) allowed into context* — not just
+    that it was relevant. ``memories_used`` shaped the answer; ``memories_blocked``
+    were retrieved but denied admission with a reason.
+    """
+
+    response_id: str
+    memories_used: list[MemoryTraceEntry] = Field(default_factory=list)
+    memories_blocked: list[MemoryTraceEntry] = Field(default_factory=list)
+    admission_counts: dict[str, int] = Field(default_factory=dict)
+
+
 # ── API contracts ────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     tenant_id: str
@@ -158,6 +195,9 @@ class ChatResponse(BaseModel):
     compression: Compression | None = None
     # Optional advisory token + cost estimate for this request (v1.2, ADR-016).
     economics: Economics | None = None
+    # Optional memory usage trace: the permissioned, explainable memory trail
+    # behind this answer (v1.3, ADR-017). Present when the trace is enabled.
+    trace: MemoryUsageTrace | None = None
     loop_evidence: dict[str, str] = Field(default_factory=dict)
     trace_id: str
 

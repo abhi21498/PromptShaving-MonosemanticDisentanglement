@@ -34,10 +34,29 @@ Response:
     "context_tokens": 0, "compressed_tokens": 0, "tokens_saved": 0,
     "llm_input_tokens": 18, "estimated_cost_usd": 0.0, "cost_saved_usd": 0.0,
     "priced": false },
+  "trace": { "response_id": "...", "admission_counts": { "ALLOW": 1 },
+    "memories_used": [{ "memory_id": "...", "content_preview": "...", "memory_type": "preference",
+      "source": { "kind": "chat" }, "stored_at": "...", "status": "active", "sensitivity": "low",
+      "consent_status": "granted", "retention_status": "none",
+      "admission_decision": "ALLOW", "admission_reason": "...", "retrieval_score": 0.42,
+      "score_breakdown": { "vector_similarity": 0.84 } }],
+    "memories_blocked": [] },
   "loop_evidence": { "memory.read": "completed", "memory.write": "completed" },
   "trace_id": "..." }
 ```
 `decision ∈ {SAVE, PENDING_APPROVAL, BLOCK, DROP_LOW_UTILITY, UPDATE_EXISTING, MERGE_WITH_EXISTING}`.
+
+**Context Admission Gate + Memory Usage Trace (v1.3).** A memory enters context
+only if it is relevant **and** allowed. The optional `trace` block is the
+permissioned, explainable memory trail behind the answer: `memories_used` (admitted)
+and `memories_blocked` (retrieved but denied), each with provenance, `stored_at`,
+`consent_status`, `retention_status`, and an `admission_decision ∈ {ALLOW,
+BLOCK_WRONG_TENANT, BLOCK_DELETED, BLOCK_ARCHIVED, BLOCK_INACTIVE,
+BLOCK_CONSENT_WITHDRAWN, BLOCK_EXPIRED, BLOCK_SENSITIVE, BLOCK_LOW_CONFIDENCE}` +
+`admission_reason`. The gate only ever *removes* memory (defense-in-depth), is
+no-throw, and audits blocked turns as `context_admission_blocked`. Toggle with
+`MEMORYOPS_ADMISSION_GATE` (observe-only when off) / `MEMORYOPS_MEMORY_TRACE`.
+See [docs/context-admission-gate.md](context-admission-gate.md), ADR-017.
 
 **Economics (v1.2).** The optional `economics` block carries an *advisory* token +
 cost estimate for the request. Costs are list-price estimates (never billing);

@@ -29,7 +29,14 @@ wrapped by Security, Governance, Observability, Reliability, Evaluation planes.
 
 - `services/api` — FastAPI. Write path lives in `app/services/` (extractor, policy_broker,
   write_service) and is orchestrated by `app/services/gateway.py`. Read path:
-  `app/services/{retriever,ranker,context_composer}.py`.
+  `app/services/{retriever,ranker,admission_gate,context_composer}.py`. The
+  **Context Admission Gate** (`admission_gate.py`, v1.3) runs after rank / before
+  compose — a memory enters context only if it is relevant **and** allowed
+  (`ALLOW`/`BLOCK_*`), and every chat response carries an explainable Memory Usage
+  Trace (`trace` block). Defense-in-depth (only ever removes memory), no-throw,
+  audited (`context_admission_blocked`); conservative defaults change no behavior.
+  Toggle `MEMORYOPS_ADMISSION_GATE` / `MEMORYOPS_MEMORY_TRACE`. See ADR-017,
+  `docs/context-admission-gate.md`.
 - `services/api/app/embeddings` — swappable `EmbeddingProvider` (stub default + optional OpenAI).
   `MEMORYOPS_EMBEDDING_PROVIDER=stub|openai`. `app/core/embeddings.py` is a back-compat shim.
 - `services/api/app/observability` — process-wide, dependency-free Prometheus

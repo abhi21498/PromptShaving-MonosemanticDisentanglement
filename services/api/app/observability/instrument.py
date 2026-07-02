@@ -45,6 +45,13 @@ def record_policy_decision(decision: str) -> None:
         logger.debug("record_policy_decision failed", extra={"event": "metric_drop"})
 
 
+def record_admission_decision(decision: str) -> None:
+    try:
+        m.ADMISSION_DECISIONS_TOTAL.inc({"decision": decision})
+    except Exception:  # noqa: BLE001 — never break the read path
+        logger.debug("record_admission_decision failed", extra={"event": "metric_drop"})
+
+
 def observe_economics(econ) -> None:
     """Record advisory token + cost estimates for a request (no-throw).
 

@@ -14,13 +14,16 @@ keyword overlap, blended by the ranker.
 - Deleted and pending memories are never retrievable.
 - Embedding generation degrades gracefully (stub fallback; keyword-only on failure).
 - Retrieval results carry an explainable `score_breakdown` and a `retrieval_mode`.
+- A memory enters context only if it is relevant **and** allowed: the Context
+  Admission Gate runs after rank / before compose and each answer carries an
+  explainable Memory Usage Trace (v1.3).
 
 ## Evidence
 - `services/api/app/embeddings/` (provider interface + stub + OpenAI)
 - `services/api/app/db/repository.py::search_candidates` (pgvector + in-memory)
-- `services/api/app/services/{retriever,ranker,context_composer}.py`
-- `services/api/tests/{test_retrieval,test_hybrid_retrieval,test_pgvector_retrieval,test_retrieval_degradation,test_embeddings}.py`
-- [ADR-002 retrieval](../../infra/adr/ADR-002-retrieval.md), [ADR-006 pgvector/RLS](../../infra/adr/ADR-006-pgvector-rls-retrieval.md)
+- `services/api/app/services/{retriever,ranker,admission_gate,context_composer}.py`
+- `services/api/tests/{test_retrieval,test_hybrid_retrieval,test_pgvector_retrieval,test_retrieval_degradation,test_embeddings,test_admission_gate,test_memory_usage_trace}.py`
+- [ADR-002 retrieval](../../infra/adr/ADR-002-retrieval.md), [ADR-006 pgvector/RLS](../../infra/adr/ADR-006-pgvector-rls-retrieval.md), [ADR-017 admission gate + usage trace](../../infra/adr/ADR-017-context-admission-gate.md)
 
 ## Gaps to close (→ v0.4+)
 - Working/session memory tier in Redis.

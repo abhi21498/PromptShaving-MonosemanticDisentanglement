@@ -3,6 +3,28 @@
 All notable releases. Git tags + GitHub Releases are the source of truth; this
 file is the consolidated narrative. Versions are `vMAJOR.MINOR[.PATCH]`.
 
+## v1.3 — Context Admission Gate + Memory Usage Trace
+Additive under the `1.x` compatibility promise. A new **Context Admission Gate**
+(`app/services/admission_gate.py`) runs between the ranker and the context composer
+(`retrieve → rank → [gate] → compose`) and decides, per memory, whether it is
+*allowed* into context — not merely relevant. Each candidate gets an explainable
+verdict (`ALLOW` or a specific `BLOCK_*`: wrong-tenant, deleted, archived, inactive,
+consent-withdrawn, expired, sensitive, low-confidence); only `ALLOW` memories reach
+the LLM. The gate is defense-in-depth (it only ever *removes* memory, strengthening
+invariants #1/#2), no-throw (#4), and audited per turn via `context_admission_blocked`
+(#7). Consent-withdrawn / retention-expired *active* memory is now denied admission
+immediately, not only after the next retention-worker pass; legal hold / pin /
+protect are retention-exempt. Conservative defaults change no behavior; the
+sensitivity + low-confidence gates are opt-in, and `admission_gate_enabled=false`
+runs it in observe-only (shadow) mode. Every chat response gains an optional
+**`trace` (Memory Usage Trace)** — the permissioned, explainable memory trail behind
+the answer (`memories_used` / `memories_blocked` with provenance, `stored_at`,
+`consent_status`, `retention_status`, `admission_decision`/`reason`, score breakdown)
+— plus a content-free `memoryops_admission_decisions_total{decision}` Prometheus
+counter and a Playground audit-trail view. Toggle with `MEMORYOPS_ADMISSION_GATE` /
+`MEMORYOPS_MEMORY_TRACE`. No DB migration; no chat-path behavior change.
+See [docs/context-admission-gate.md](docs/context-admission-gate.md), [ADR-017](infra/adr/ADR-017-context-admission-gate.md).
+
 ## v1.2 — Advisory Economics: Token + Cost Estimation
 Additive under the `1.x` compatibility promise. Every chat response gains an
 optional `economics` block — advisory per-request token counts (embedding, context,

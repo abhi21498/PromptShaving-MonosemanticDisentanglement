@@ -31,6 +31,7 @@ and returns `404`).
 | `memoryops_retrieval_total` | counter | `mode` | Memory reads by mode (`hybrid`/`fallback`/`none`) |
 | `memoryops_retrieval_duration_ms` | histogram | — | Read-path latency (retrieve+rank+compose, ms) |
 | `memoryops_policy_decisions_total` | counter | `decision` | Policy broker decisions (`SAVE`/`BLOCK`/…) |
+| `memoryops_admission_decisions_total` | counter | `decision` | Context admission gate decisions (`ALLOW`/`BLOCK_*`); see [context-admission-gate.md](context-admission-gate.md) |
 | `memoryops_worker_runs` | gauge | `status` | Recent worker runs by status (pull-derived) |
 | `memoryops_worker_dead_letter_count` | gauge | — | Dead-lettered worker runs in recent history |
 | `memoryops_worker_failed_count` | gauge | — | Failed worker runs in recent history |

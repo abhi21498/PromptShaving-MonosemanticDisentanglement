@@ -62,6 +62,11 @@ class ChatResult:
     # Advisory per-request token + cost estimate (server v1.2, ADR-016). None when
     # the server predates economics; otherwise the parsed `economics` block.
     economics: dict[str, Any] | None = None
+    # Memory Usage Trace: the permissioned, explainable memory trail behind the
+    # answer (server v1.3, ADR-017). None when the server predates the trace or it
+    # is disabled; otherwise the parsed `trace` block (`memories_used`,
+    # `memories_blocked`, `admission_counts`).
+    trace: dict[str, Any] | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -76,6 +81,7 @@ class ChatResult:
             trace_id=d.get("trace_id", ""),
             temporary_chat=d.get("temporary_chat", False),
             economics=d.get("economics"),
+            trace=d.get("trace"),
             raw=d,
         )
 
