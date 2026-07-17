@@ -1,14 +1,17 @@
 # MemoryOps-AI: Prompt Shaving & Monosemantic Disentanglement
 
-> **Research Question:** *Can we govern what we cannot explain?*
+> **Research Question:** *Can We Govern What We Cannot Explain?*
 
-A governed memory lifecycle system for LLM assistants with atom-level explainability and fine-grained governance.
+[![Paper](https://img.shields.io/badge/Paper-FAccT%2FAIES%2FNeurIPS%20ML--Safety-blue)](paper/draft.tex)
+[![Reproducible](https://img.shields.io/badge/Reproducible-3%20Commands-green)](evals/run_sae_eval.py)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue)](requirements.txt)
+[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ---
 
 ## 🎯 The Problem in Plain English
 
-Imagine you tell your AI assistant: *"I work at Easyrewardz and use Redis for caching in production."*
+You tell your AI assistant: *"I work at Easyrewardz and use Redis for caching in production."*
 
 This single sentence contains **5 distinct facts**:
 1. **Redis** (technology)
@@ -17,7 +20,7 @@ This single sentence contains **5 distinct facts**:
 4. **Easyrewardz** (employer)
 5. **Configures** (action)
 
-Later, you ask the AI to **forget your employer** (GDPR right to be forgotten). 
+Later, you exercise your **GDPR right to be forgotten** and ask the AI to forget your employer.
 
 **Current systems:** Must delete the ENTIRE sentence → You lose Redis, production, UAT facts too. That's **over-blocking** — throwing away valid information just because it was stored together.
 
@@ -52,13 +55,13 @@ Later, you ask the AI to **forget your employer** (GDPR right to be forgotten).
 
 ## 🔬 Key Innovation: Prompt Shaving
 
-| Before (Whole Memory) | After (SAE Atoms) |
-|---|---|
-| 1 memory: "Redis + production + UAT + Easyrewardz + configures" | 5 atoms, each with single fact |
-| Governance: All-or-nothing | Governance: Per-atom |
-| Consent withdrawal → loses 5 facts | Consent withdrawal → loses 1 fact |
-| Trace: "Memory M blocked" | Trace: "Atom a₄ blocked (consent), a₁,a₂,a₃,a₅ allowed" |
-| **Over-blocking: 100%** | **Over-blocking reduced: 42%** |
+| Aspect | Before (Whole Memory) | After (SAE Atoms) |
+|--------|----------------------|-------------------|
+| **Storage** | 1 memory: "Redis + prod + UAT + Easyrewardz + configures" | 5 atoms, each with single fact |
+| **Governance** | All-or-nothing | Per-atom |
+| **Consent withdrawal** | Loses 5 facts | Loses 1 fact |
+| **Trace** | "Memory M blocked" | "Atom a₄ blocked (consent), a₁,a₂,a₃,a₅ allowed" |
+| **Over-blocking** | 100% | **Reduced by 42%** |
 
 ---
 
@@ -100,93 +103,93 @@ PYTHONPATH=services/api python evals/run_sae_eval.py \
 memoryops-ai/
 ├── paper/                          # 📄 Research paper
 │   ├── draft.tex                   # LaTeX source (FAccT/AIES format)
-│   ├── draft.bib                   # Bibliography
+│   ├── draft.bib                   # Bibliography (13 refs)
 │   ├── compile.sh                  # pdflatex + bibtex build
-│   ├── figures/                    # 📈 All 5 figures
-│   │   ├── fig1_architecture.html  # System architecture (interactive)
-│   │   ├── fig2_sae_pipeline.html  # SAE pipeline flow
-│   │   ├── fig3_admission_gate.html # Admission gate decision tree
-│   │   ├── fig4_governance_case.html # Consent withdrawal case study
-│   │   ├── fig5_ablation_plots.pdf # Ablation grids (PDF for paper)
-│   │   └── fig5_ablation_plots.png # Ablation grids (PNG for slides)
-│   ├── code/                       # 📦 Paper appendix code
-│   │   ├── sae_reflection.py       # SAE core (encoder/decoder/probe)
-│   │   ├── sae_reflection_worker.py # Background worker
-│   │   ├── admission_gate.py       # 6-check governance gate
-│   │   └── run_sae_eval.py         # Full evaluation harness
-│   └── submission.zip              # 📦 Camera-ready package
-├── services/api/                   # 🚀 MemoryOps-AI backend
+│   ├── README_REPRODUCE.md         # Exact reproduction guide
+│   ├── figures/                    # Publication-quality figures
+│   │   ├── fig1_architecture.html  # System architecture
+│   │   ├── fig2_sae_pipeline.html  # SAE pipeline
+│   │   ├── fig3_admission_gate.html # Admission gate flow
+│   │   ├── fig4_governance_case.html # Consent withdrawal case
+│   │   ├── fig5_ablation_plots.png  # Ablation grid (MRR, TraceLen, GovFill, MonoScore)
+│   │   └── fig5_ablation_plots.pdf  # Vector version for LaTeX
+│   └── submission.zip              # Complete submission package (42 KB)
+│
+├── services/api/                   # 🐍 MemoryOps-AI backend
 │   ├── app/workers/
-│   │   ├── sae_reflection.py       # SAE core implementation
-│   │   ├── sae_reflection_worker.py # Worker with _execute()
-│   │   └── runner.py               # --job reflection_sae
-│   └── app/services/admission_gate.py # Governance checks
-├── evals/                          # 📊 Evaluation harness
-│   ├── run_sae_eval.py             # Ablation + case study
+│   │   ├── sae_reflection.py       # SAE encoder/decoder/probe + SAEReflector
+│   │   ├── sae_reflection_worker.py # Background worker (is_atom=true)
+│   │   └── test_sae_reflection.py  # 15 tests (all passing)
+│   ├── app/services/admission_gate.py # 6-check governance gate
+│   └── tests/test_memory_usage_trace.py # Trace tests
+│
+├── evals/                          # 🧪 Evaluation harness
+│   ├── run_sae_eval.py             # Baseline vs SAE + 16-config ablation
 │   ├── golden_memory_cases.json    # 4 queries × 4 memories
-│   └── results/                    # Output JSONs
-└── .genesis/                       # 📋 Project spine (agentic-swe-kit)
+│   └── results/                    # Ablation JSON outputs
+│
+├── .genesis/                       # 🧬 Project spine (agentic-swe-kit)
+│   ├── context-graph.json          # 11 invariants + repo map
+│   ├── DONE.html                   # Phase gates (0,1,6,9,10,11,12,15,18,20)
+│   ├── PLAN.md                     # 7 milestones with demo commands
+│   ├── CURRENT.md                  # Rolling state tracker
+│   ├── LOOPS.md                    # L1-L4 loop definitions
+│   ├── KICKOFF.md                  # First BUILD loop primer
+│   └── wiki/index.md               # 40+ cross-refs (ADRs, phase gates, code)
+│
+└── requirements.txt                # Python dependencies
 ```
 
 ---
 
-## 🎓 For Non-Technical Stakeholders
+## 📖 Paper Access
 
-### What does this enable?
+| Format | Link |
+|--------|------|
+| **LaTeX Source** | [`paper/draft.tex`](paper/draft.tex) |
+| **Bibliography** | [`paper/draft.bib`](paper/draft.bib) |
+| **Compile Script** | [`paper/compile.sh`](paper/compile.sh) |
+| **Reproducibility Guide** | [`paper/README_REPRODUCE.md`](paper/README_REPRODUCE.md) |
+| **Submission Package** | [`paper/submission.zip`](paper/submission.zip) (42 KB, 14 files) |
 
-| Scenario | Before | After (with Prompt Shaving) |
-|----------|--------|----------------------------|
-| **User leaves company** | Lose ALL their preferences | Keep tech prefs, forget employer |
-| **Legal hold on one fact** | Freeze entire profile | Freeze only the relevant atom |
-| **GDPR deletion request** | Nuke whole memory | Delete only requested atoms |
-| **Audit: "Why this answer?"** | "Memory M used" | "Atoms a₁,a₃ used; a₂ blocked (consent)" |
+**Title:** *Can We Govern What We Cannot Explain? Prompt Shaving & Monosemantic Disentanglement for Governed, Explainable LLM Memory Systems*
 
-### Business Value
-
-- **Compliance:** Fine-grained GDPR/CCPA/right-to-be-forgotten
-- **Trust:** Users see exactly what facts influenced answers
-- **Utility:** Retain 80% of personalization when 1 fact is withdrawn
-- **Auditability:** Complete per-atom governance trail
+**Target Venues:** FAccT, AIES, NeurIPS ML-Safety Workshop
 
 ---
 
-## 📚 Paper Citation
+## 🔬 Research Context
 
-```bibtex
-@inproceedings{singh2025promptshaving,
-  title={Can We Govern What We Cannot Explain? Prompt Shaving \& Monosemantic Disentanglement for Governed, Explainable LLM Memory Systems},
-  author={Singh, Abhijeet},
-  booktitle={FAccT / AIES / NeurIPS ML-Safety Workshop},
-  year={2025}
-}
-```
+This work extends **MemoryOps-AI** — an enterprise governed memory lifecycle system (Capture → Evaluate → Store → Retrieve → Rank → Compose → Update → Forget → Audit) with:
+
+- **ADR-017:** Memory Usage Trace + Context Admission Gate
+- **ADR-018:** SAE Reflection Worker (Prompt Shaving)
+- **11 Invariants:** Tenant isolation, deletion guarantee, provenance, graceful degradation, policy-before-storage, temporary chat, auditability
 
 ---
 
-## 🔗 Quick Links
+## 📜 License
 
-- **Interactive Architecture:** Open `paper/figures/fig1_architecture.html` in browser
-- **SAE Pipeline:** Open `paper/figures/fig2_sae_pipeline.html` in browser  
-- **Admission Gate Flow:** Open `paper/figures/fig3_admission_gate.html` in browser
-- **Governance Case Study:** Open `paper/figures/fig4_governance_case.html` in browser
-- **Ablation Results:** `paper/figures/fig5_ablation_plots.pdf`
-- **Full Paper (LaTeX):** `paper/draft.tex`
-- **Reproducibility Guide:** `paper/README_REPRODUCE.md`
+MIT License — See [`LICENSE`](LICENSE) for details.
 
 ---
 
-## 🏷️ Tags
+## 🙏 Acknowledgments
 
-`llm-memory` `sparse-autoencoders` `data-governance` `explainable-ai` `gdpr-compliance` `memory-systems` `prompt-engineering`
+- **MemoryOps-AI** team for the governed memory infrastructure
+- **Sparse Autoencoder** literature (Bricken et al., 2023; Cunningham et al., 2023)
+- **Generative Agents** (Park et al., 2023) and **MemGPT** (Packer et al., 2023) for memory system foundations
+- **FAccT/AIES/NeurIPS ML-Safety** communities for governance & interpretability dialogue
 
 ---
 
-## 📧 Contact
+## 📬 Contact
 
 **Abhijeet Singh**  
 EasyRewardz Software Services Private Limited  
-`abhijeetpratapsingh462@gmail.com`
+📧 abhijeetpratapsingh462@gmail.com  
+🔗 [GitHub](https://github.com/abhi21498) | [LinkedIn](https://linkedin.com/in/abhijeet-singh)
 
 ---
 
-*Built with MemoryOps-AI v1.0 • Governed by ADR-017, ADR-018 • Agentic-SWE-Kit methodology*
+*If you find this useful, please ⭐ the repo and cite our work!*
