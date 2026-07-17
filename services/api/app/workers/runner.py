@@ -31,6 +31,7 @@ from .deletion_verification import DeletionVerificationWorker
 from .lifecycle import LifecycleWorker, WorkerContext
 from .reflection import ReflectionWorker
 from .retention import RetentionWorker
+from .sae_reflection_worker import SAEReflectionWorker
 from .schemas import DEFAULT_JOB_ORDER, WorkerJob, WorkerRunReport
 
 # Job → worker class. Single source of truth for the runner and the CLI.
@@ -42,6 +43,7 @@ _WORKERS: dict[WorkerJob, type[LifecycleWorker]] = {
     WorkerJob.deletion_verification: DeletionVerificationWorker,
     WorkerJob.conflict_scan: ConflictScanWorker,
     WorkerJob.reflection: ReflectionWorker,
+    WorkerJob.reflection_sae: SAEReflectionWorker,
 }
 
 

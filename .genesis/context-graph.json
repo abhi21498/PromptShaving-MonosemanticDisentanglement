@@ -1,0 +1,122 @@
+{
+  "repo": "memoryops-ai",
+  "root": "D:/OneDrive - EasyRewardz Software Services Private Limited/Desktop/Myprojects/MemoryTrace/memoryops-ai",
+  "description": "Enterprise memory governance for AI assistants — governed lifecycle: Capture → Evaluate → Store → Retrieve → Rank → Compose → Update → Forget → Audit, wrapped by Security, Governance, Observability, Reliability, Evaluation planes.",
+  "languages": ["TypeScript", "Python", "SQL", "Dockerfile", "YAML", "Markdown"],
+  "key_directories": {
+    "services/api": "FastAPI backend (gateway, extractor, policy broker, write/read path, audit, workers, loops)",
+    "services/api/app/workers": "Background lifecycle workers (decay, archive, conflict_scan, reflection, deletion_compaction, deletion_verification, retention)",
+    "services/api/app/loops": "Loop engineering definitions (memory.write, memory.read, memory.governance, memory.evaluation, release.gate, learning.continuous)",
+    "services/api/app/db": "Repository abstraction (memory + postgres backends), RLS enforcement, governance metadata",
+    "services/api/app/embeddings": "Swappable EmbeddingProvider (stub, openai)",
+    "services/api/app/llm": "Provider-neutral LLM layer (stub, openai, anthropic, gemini) with structured output & heuristic fallback",
+    "services/api/app/compression": "Optional context compression (noop, headroom)",
+    "apps/web": "Next.js frontend (chat, memories, governance, audit, loops, admin, architecture)",
+    "apps/playground": "Interactive Streamlit playground (demo-only, in-memory)",
+    "apps/results-dashboard": "Public read-only Streamlit evidence dashboard",
+    "packages/memoryops-sdk": "Python SDK + integration examples",
+    "infra/db/migrations": "Postgres + pgvector schema, RLS policies (migration 004 FORCE)",
+    "infra/adr": "Architecture Decision Records (001-017)",
+    "evals": "Golden + adversarial cases, eval runner",
+    "docs": "Architecture, governance, deployment, loops, retention, compression, etc.",
+    ".github/workflows": "CI + PR Invariant Evidence Gate",
+    ".hermes/skills": "Hermes operator skills (memoryops-architect, memoryops-invariant-auditor, memoryops-release-manager)"
+  },
+  "invariants": [
+    {
+      "id": "INV-001",
+      "name": "Tenant Isolation",
+      "description": "Every memory query filters by tenant_id + user_id. Enforced via repository tenant-scoped queries + Postgres RLS (migration 004 FORCE).",
+      "enforced_in": ["services/api/app/db/repository.py", "services/api/app/db/postgres_repo.py", "infra/db/migrations/004_rls_policies.sql"],
+      "test": "services/api/tests/test_tenant_isolation.py"
+    },
+    {
+      "id": "INV-002",
+      "name": "Deletion Guarantee",
+      "description": "status='deleted' rows are never retrieved. Repository filters status != deleted. Verified by deletion_verification worker.",
+      "enforced_in": ["services/api/app/db/repository.py", "services/api/app/workers/deletion_verification.py"],
+      "test": "services/api/tests/test_deletion.py"
+    },
+    {
+      "id": "INV-003",
+      "name": "Provenance",
+      "description": "Every stored memory has non-null source (kind, excerpt, message_id, conversation_id). Write service always sets it.",
+      "enforced_in": ["services/api/app/services/write_service.py", "services/api/app/schemas/memory.py"],
+      "test": "services/api/tests/test_write_path.py"
+    },
+    {
+      "id": "INV-004",
+      "name": "Graceful Degradation",
+      "description": "Retrieval failures never block response generation. Gateway wraps retrieval in safe_call with default empty context.",
+      "enforced_in": ["services/api/app/services/gateway.py"],
+      "test": "services/api/tests/test_retrieval_degradation.py"
+    },
+    {
+      "id": "INV-005",
+      "name": "Policy Before Storage",
+      "description": "Policy broker runs before any write. LLM extraction is advisory only; broker stays authoritative.",
+      "enforced_in": ["services/api/app/services/gateway.py", "services/api/app/services/policy_broker.py"],
+      "test": "services/api/tests/test_policy_broker.py"
+    },
+    {
+      "id": "INV-006",
+      "name": "Temporary Chat",
+      "description": "temporary_chat=true short-circuits both read and write paths. No memory access, no audit writes.",
+      "enforced_in": ["services/api/app/services/gateway.py"],
+      "test": "services/api/tests/test_temporary_chat.py"
+    },
+    {
+      "id": "INV-007",
+      "name": "Auditability",
+      "description": "Every lifecycle action appends an audit event via AuditService. Audit logs are append-only.",
+      "enforced_in": ["services/api/app/services/audit.py", "services/api/app/services/gateway.py", "services/api/app/services/write_service.py"],
+      "test": "services/api/tests/test_governance_api.py"
+    },
+    {
+      "id": "INV-008",
+      "name": "Explainability (Memory Usage Trace)",
+      "description": "Every chat response carries trace.memories_used + trace.memories_blocked with admission_decision, admission_reason, and governance fields (legal_hold, pinned, protected, retention_policy, retention_expires_at).",
+      "enforced_in": ["services/api/app/schemas/memory.py", "services/api/app/services/admission_gate.py", "services/api/app/services/gateway.py"],
+      "test": "services/api/tests/test_memory_usage_trace.py"
+    },
+    {
+      "id": "INV-009",
+      "name": "Typed Memory",
+      "description": "Episodic, semantic, procedural, project, knowledge, system, constraint, preference, workflow memories differ in semantics and lifecycle.",
+      "enforced_in": ["services/api/app/schemas/memory.py", "services/api/app/services/extractor.py", "services/api/app/services/policy_broker.py"],
+      "test": "services/api/tests/test_structured_memory_extraction.py"
+    },
+    {
+      "id": "INV-010",
+      "name": "Evaluation",
+      "description": "Memory quality testable through golden set + adversarial cases, not just manual inspection.",
+      "enforced_in": ["evals/run_evals.py", "evals/golden_memory_cases.json", "evals/adversarial_cases.json"],
+      "test": "evals/run_evals.py"
+    },
+    {
+      "id": "INV-011",
+      "name": "Worker Runtime Operability",
+      "description": "Background jobs run off chat path, are tenant-scoped, idempotent, retry-safe, leased (no duplicate runs), dead-lettered on exhausted retries, persisted run history (worker_runs table, migration 006), health at GET /healthz/workers.",
+      "enforced_in": ["services/api/app/workers/orchestrator.py", "services/api/app/workers/scheduler.py", "services/api/app/workers/locks.py", "services/api/app/workers/retry.py", "services/api/app/workers/runner.py"],
+      "test": "services/api/tests/test_worker_orchestrator.py"
+    }
+  ],
+  "entry_points": {
+    "api_dev": "cd services/api && MEMORYOPS_STORAGE=memory uvicorn app.main:app --reload",
+    "api_test": "cd services/api && pytest -q",
+    "evals": "cd evals && python run_evals.py",
+    "web_dev": "cd apps/web && npm run dev",
+    "full_stack": "docker compose up --build",
+    "worker_runner": "cd services/api && python -m app.workers.runner --tenant t1 --user u1 --job all",
+    "rls_check": "python scripts/check_rls_policies.py",
+    "pr_gate": "python scripts/pr_invariant_gate.py --base HEAD~1 --head HEAD"
+  },
+  "external_dependencies": {
+    "postgres_pgvector": "Railway Postgres plugin (production) / docker compose (local)",
+    "redis": "Railway Redis plugin / docker compose",
+    "openai_api": "Optional — for real embeddings/LLM providers",
+    "anthropic_api": "Optional",
+    "gemini_api": "Optional",
+    "headroom_ai": "Optional — for context compression"
+  }
+}

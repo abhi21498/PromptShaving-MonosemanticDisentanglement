@@ -23,6 +23,7 @@ class WorkerJob(str, Enum):
     deletion_verification = "deletion_verification"
     conflict_scan = "conflict_scan"
     reflection = "reflection"
+    reflection_sae = "reflection_sae"
 
 
 # Jobs the runner executes for the "all" selector, in a deliberate order:

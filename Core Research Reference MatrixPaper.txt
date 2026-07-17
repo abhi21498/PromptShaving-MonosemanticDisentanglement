@@ -1,0 +1,42 @@
+ Core Research Reference MatrixPaper Title & AuthorsKey Architectural FocusDirect System Applicability"Generative Agents: Interactive Simulacra of Human Behavior"(Park et al., Stanford/Google)Retrieval Scoring Formulas, Cognitive Memory StreamsCore baseline for the Ranker engine to mathematically justify memory prioritization."MemGPT: Towards LLMs as Operating Systems"(Packer et al., UC Berkeley)Virtual Memory Management, Context Windows as OS RAMBlueprint for managing Typed Memory Stores and stateful memory modification cues."Evaluating the Evaluation Metrics for Measuring Source Attribution in Large Language Models"(Rashkin et al., Google Research)Source Attribution Metrics, Attributable to Identified Sources (AIS)Framework for building out-of-band evaluation tests to verify response trustworthiness."ALCE: Automated Evaluation of Language Models for Citation Content Generation"(Gao et al., Princeton)Context Window Citation Enforcement & VerificationGuidelines for forcing the model to issue strict, machine-readable citations per claim."Lost in the Middle: How Language Models Use Long Contexts"(Liu et al., Stanford/UC Berkeley)Context Window Positional Bias (U-Shaped Curve)Algorithmic layout strategy for the Context Composer to counter attention degradation.3. Algorithmic Formulations (Mathematical Baselines)A. Tri-Axis Memory Retrieval ScoringPopularized by Park et al., this formula calculates the final viability score of a memory slot by blending modern vector space measurements with traditional time-decay functions and static importance scores.$$S_{\text{retrieval}} = \alpha \cdot S_{\text{recency}} + \beta \cdot S_{\text{importance}} + \gamma \cdot S_{\text{relevance}}$$Where:$S_{\text{recency}} = \lambda^{(t - t_{\text{last}})}$: Exponential time-decay function where $\lambda \in [0, 1]$ represents the decay constant, $t$ is current simulation time, and $t_{\text{last}}$ is the timestamp of the last access/update.$S_{\text{importance}}$: Static or LLM-predicted utility score ($1$ to $10$) captured at the extraction boundary.$S_{\text{relevance}}$: Vector cosine similarity between the embedded query vector $\vec{q}$ and the memory material vector $\vec{m}$:$$S_{\text{relevance}} = \frac{\vec{q} \cdot \vec{m}}{\|\vec{q}\| \|\vec{m}\|}$$B. Hybrid Retrieval Score Fusion (RRF Baseline)To blend vector-space (pgvector) candidates with strict keyword overlap (BM25), Reciprocal Rank Fusion (RRF) ensures stable sorting:$$RRF\_Score(d \in D) = \sum_{m \in M} \frac{1}{k + r_m(d)}$$Where $M$ is the set of retrieval strategies (keyword, vector), $r_m(d)$ is the rank assigned to document $d$ by strategy $m$, and $k$ is a smoothing constant (typically $k \approx 60$).4. Structured JSON Schema for LLM Context & TracingTo implement deterministic trace loops without modifying the core weights of the generator, the context window must isolate memories into explicit, ID-tagged blocks, forcing the LLM to output an inline attribution map.Context Composition Structure (Prompt Injection Format)JSON{
+  "retrieved_context_blocks": [
+    {
+      "id": "mem_semantic_9182",
+      "type": "semantic",
+      "provenance": "msg_user_004",
+      "content": "User prefers using C# and .NET for backend development services."
+    },
+    {
+      "id": "mem_project_3341",
+      "type": "project",
+      "provenance": "doc_readme_root",
+      "content": "Project uses Postgres + pgvector for multi-tenant isolation."
+    }
+  ]
+}
+Response + Memory Trace Extraction Schema (Output Format)JSON{
+  "assistant_response": "Since you prefer building backend systems with C# and .NET, we can design the multi-tenant isolation layer natively using Postgres and pgvector.",
+  "memory_trace_usage": {
+    "attributed_memories": [
+      {
+        "memory_id": "mem_semantic_9182",
+        "rationale": "Directly informed the choice of C# and .NET for the system design advice.",
+        "confidence_score": 0.98
+      },
+      {
+        "memory_id": "mem_project_3341",
+        "rationale": "Provided context regarding Postgres and pgvector as the targeted database infrastructure.",
+        "confidence_score": 0.95
+      }
+    ],
+    "policy_execution_summary": {
+      "active_tenant_isolation": "ENFORCED_TIER_1",
+      "legal_holds_checked": true,
+      "retention_status": "VALID_NOT_EXPIRED"
+    }
+  }
+}
+
+1. **Core Reference Matrix:** Features exact paper titles (*MemGPT*, *Generative Agents*, *Lost in the Middle*, *ALCE*, *Rashkin et al.*) mapping how each paper explicitly answers the questions of "which memory" or "why it was allowed."
+2. **Algorithmic Formulations:** Fully structured equations written in clean LaTeX syntax ($\text{LaTeX}$ formulas for memory time-decay, importance scaling, vector cosine similarity, and Reciprocal Rank Fusion) so that an advanced coding LLM can immediately implement them in code.
+3. **Structured JSON Traversal Schemas:** Production-grade examples of an input `Context Composition` block and an output `Memory Trace Extraction` payload to help teach an agentic model how to explicitly cite its internal memory banks.

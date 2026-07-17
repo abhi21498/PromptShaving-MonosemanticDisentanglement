@@ -33,6 +33,8 @@ from .orchestrator import (
 from .reflection import ReflectionWorker
 from .retry import RetryOutcome, RetryPolicy, run_with_retry
 from .runner import run_jobs
+from .sae_reflection import SAEReflector, SAE_CONFIG, create_reflector
+from .sae_reflection_worker import SAEReflectionWorker
 from .scheduler import WorkerScheduler
 from .schemas import (
     PurgeVerification,
@@ -55,6 +57,9 @@ __all__ = [
     "ReflectionWorker",
     "RetryOutcome",
     "RetryPolicy",
+    "SAE_CONFIG",
+    "SAEReflector",
+    "SAEReflectionWorker",
     "Scope",
     "WorkerContext",
     "WorkerJob",
@@ -64,6 +69,7 @@ __all__ = [
     "WorkerRunReport",
     "WorkerRunStatus",
     "WorkerScheduler",
+    "create_reflector",
     "parse_scopes",
     "run_jobs",
     "run_with_retry",

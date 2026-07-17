@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fig 2: SAE Reflection Pipeline - Prompt Shaving Flow</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'JetBrains Mono', monospace; background: #020617; min-height: 100vh; padding: 2rem; color: white; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot { width: 12px; height: 12px; background: #fbbf24; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container { background: rgba(15, 23, 42, 0.5); border-radius: 1rem; border: 1px solid #1e293b; padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 1200px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card { background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem; }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.violet { background: #a78bfa; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>Fig 2: SAE Reflection Pipeline — Prompt Shaving Flow</h1>
+      </div>
+      <p class="subtitle">Raw Memory → SBERT Embed → SAE Encode → Top-k Atoms → Store as is_atom=true</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1300 700">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrowhead-dashed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <marker id="arrowhead-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Background Grid -->
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ===================================================================
+             STEP 1: RAW MEMORY INPUT
+             =================================================================== -->
+        <rect x="40" y="40" width="260" height="80" rx="8" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="130" y="70" fill="white" font-size="13" font-weight="600" text-anchor="middle">Raw Memory (M_raw)</text>
+        <text x="130" y="100" fill="#94a3b8" font-size="9" text-anchor="middle">"User configures Redis cache</text>
+        <text x="130" y="114" fill="#94a3b8" font-size="9" text-anchor="middle">instances for production UAT</text>
+        <text x="130" y="128" fill="#94a3b8" font-size="9" text-anchor="middle">environment at Easyrewardz."</text>
+        <text x="130" y="148" fill="#fb7185" font-size="8" text-anchor="middle">Source: chat / doc / manual</text>
+
+        <!-- Arrow to Embedder -->
+        <line x1="300" y1="90" x2="430" y2="90" stroke="#fb7185" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="365" y="85" fill="#fb7185" font-size="9" text-anchor="middle" font-weight="600">Embed</text>
+
+        <!-- ===================================================================
+             STEP 2: FROZEN SBERT EMBEDDER
+             =================================================================== -->
+        <rect x="460" y="30" width="200" height="120" rx="8" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="210" y="50" fill="#22d3ee" font-size="12" font-weight="600" text-anchor="middle">Frozen SBERT</text>
+        <text x="210" y="70" fill="#94a3b8" font-size="9" text-anchor="middle">all-MiniLM-L6-v2</text>
+        <text x="210" y="90" fill="#94a3b8" font-size="9" text-anchor="middle">384-dim, L2-normalized</text>
+        <text x="210" y="110" fill="#94a3b8" font-size="9" text-anchor="middle">Frozen (no gradients)</text>
+        <text x="210" y="130" fill="#22d3ee" font-size="8" text-anchor="middle">x = SBERT(M_raw) ∈ ℝ³⁸⁴</text>
+
+        <!-- Arrow to SAE -->
+        <line x1="660" y1="90" x2="780" y2="90" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="720" y="85" fill="#22d3ee" font-size="9" text-anchor="middle" font-weight="600">Encode</text>
+
+        <!-- ===================================================================
+             STEP 3: SAE ENCODER (SPARSE AUTOENCODER)
+             =================================================================== -->
+        <rect x="810" y="10" width="220" height="160" rx="8" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="320" y="30" fill="#fbbf24" font-size="13" font-weight="600" text-anchor="middle">SAE Encoder</text>
+        <text x="320" y="52" fill="#94a3b8" font-size="9" text-anchor="middle">x ∈ ℝ³⁸⁴ → z ∈ ℝ¹²⁸</text>
+        <text x="320" y="66" fill="#94a3b8" font-size="9" text-anchor="middle">z = ReLU(Wₑx + bₑ)</text>
+        <text x="320" y="78" fill="#94a3b8" font-size="9" text-anchor="middle">L₁ Sparsity: λ₁‖z‖₁</text>
+        <text x="320" y="92" fill="#94a3b8" font-size="9" text-anchor="middle">ReLU → sparse z (λ=1e-3)</text>
+        <text x="320" y="106" fill="#94a3b8" font-size="9" text-anchor="middle">z₀, z₅, z₂₃, z₈₇, z₁₀₂ > 0</text>
+        <text x="320" y="118" fill="#94a3b8" font-size="9" text-anchor="middle">k=5 active dims (Top-k)</text>
+        
+        <!-- Monosemanticity Probe -->
+        <text x="320" y="136" fill="#94a3b8" font-size="9" text-anchor="middle">Monosemanticity Probe:</text>
+        <text x="320" y="150" fill="#94a3b8" font-size="9" text-anchor="middle">p = softmax(MLP(z)) ∈ Δ⁸</text>
+        <text x="320" y="162" fill="#94a3b8" font-size="9" text-anchor="middle">H(p) = -Σ pᵢ log pᵢ (min)</text>
+        <text x="320" y="174" fill="#fbbf24" font-size="8" text-anchor="middle">α·H(p) loss (α=0.5)</text>
+
+        <!-- Arrow to Decoder -->
+        <line x1="1030" y1="90" x2="1160" y2="90" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="1095" y="85" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="600">Decode</text>
+
+        <!-- ===================================================================
+             STEP 4: SAE DECODER (ATOM EXTRACTION)
+             =================================================================== -->
+        <rect x="1190" y="10" width="220" height="160" rx="8" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="220" y="30" fill="#a78bfa" font-size="13" font-weight="600" text-anchor="middle">SAE Decoder</text>
+        <text x="220" y="52" fill="#94a3b8" font-size="9" text-anchor="middle">x̂ = W_d z (linear, no bias)</text>
+        <text x="220" y="66" fill="#94a3b8" font-size="9" text-anchor="middle">Loss: 1 - cos(x, x̂) + λ₁‖z‖₁ + α·H(p)</text>
+        
+        <!-- Top-k Extraction -->
+        <text x="220" y="94" fill="#94a3b8" font-size="9" text-anchor="middle">Top-k Extraction (k=5):</text>
+        <text x="220" y="108" fill="#94a3b8" font-size="9" text-anchor="middle">For each top-zᵢ: z_masked = [0,..,zᵢ,..,0]</text>
+        <text x="220" y="120" fill="#94a3b8" font-size="9" text-anchor="middle">atomᵢ = normalize(W_d[:,i] · zᵢ) ∈ ℝ³⁸⁴</text>
+        <text x="220" y="132" fill="#94a3b8" font-size="9" text-anchor="middle">probe(atomᵢ) → type_logits ∈ Δ⁸</text>
+        <text x="220" y="146" fill="#a78bfa" font-size="8" text-anchor="middle">Gradients flow: z ← z - η∇L</text>
+
+        <!-- Arrow to Atom Storage -->
+        <line x1="1410" y1="90" x2="1540" y2="90" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="1465" y="85" fill="#a78bfa" font-size="9" text-anchor="middle" font-weight="600">Store</text>
+
+        <!-- ===================================================================
+             STEP 5: ATOM STORAGE (is_atom=true)
+             =================================================================== -->
+        <rect x="1570" y="20" width="240" height="160" rx="8" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="400" y="50" fill="#a78bfa" font-size="13" font-weight="600" text-anchor="middle">Atom Storage</text>
+        <text x="400" y="70" fill="#94a3b8" font-size="9" text-anchor="middle">Each atom → MemoryRecord:</text>
+        <text x="400" y="84" fill="#94a3b8" font-size="9" text-anchor="middle">• is_atom = true</text>
+        <text x="400" y="96" fill="#94a3b8" font-size="9" text-anchor="middle">• sae_embedding = atomᵢ ∈ ℝ³⁸⁴</text>
+        <text x="400" y="108" fill="#94a3b8" font-size="9" text-anchor="middle">• origin_memory_id = M_raw.id</text>
+        <text x="400" y="120" fill="#94a3b8" font-size="9" text-anchor="middle">• atom_latent_dim = i</text>
+        <text x="400" y="132" fill="#94a3b8" font-size="9" text-anchor="middle">• atom_type_logits = type_logitsᵢ</text>
+        <text x="400" y="144" fill="#94a3b8" font-size="9" text-anchor="middle">• approx_text = <atom_dim_i></text>
+        <text x="400" y="156" fill="#a78bfa" font-size="8" text-anchor="middle">Inherits governance from source</text>
+        <text x="400" y="168" fill="#a78bfa" font-size="8" text-anchor="middle">is_atom=true → Admission Gate evaluates</text>
+
+        <!-- Arrow to Admission Gate -->
+        <line x1="1810" y1="110" x2="1940" y2="110" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="1875" y="105" fill="#a78bfa" font-size="9" text-anchor="middle" font-weight="600">Admit</text>
+
+        <!-- ===================================================================
+             STEP 6: ADMISSION GATE (Atom-Level)
+             =================================================================== -->
+        <rect x="1970" y="50" width="220" height="180" rx="8" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="360" y="70" fill="#fbbf24" font-size="13" font-weight="600" text-anchor="middle">Admission Gate</text>
+        <text x="360" y="90" fill="#94a3b8" font-size="9" text-anchor="middle">Per-atom evaluation:</text>
+        <text x="360" y="102" fill="#94a3b8" font-size="9" text-anchor="middle">✓ Tenant/User Scope</text>
+        <text x="360" y="114" fill="#94a3b8" font-size="9" text-anchor="middle">✓ Status = Active</text>
+        <text x="360" y="126" fill="#94a3b8" font-size="9" text-anchor="middle">✓ Consent Granted</text>
+        <text x="360" y="138" fill="#94a3b8" font-size="9" text-anchor="middle">✓ Retention Active</text>
+        <text x="360" y="150" fill="#94a3b8" font-size="9" text-anchor="middle">✓ Sensitivity Check</text>
+        <text x="360" y="162" fill="#94a3b8" font-size="9" text-anchor="middle">✓ Score ≥ Threshold</text>
+        <text x="360" y="174" fill="#94a3b8" font-size="9" text-anchor="middle">✓ Legal Hold Check</text>
+        <text x="360" y="186" fill="#94a3b8" font-size="9" text-anchor="middle">✓ Pin / Protect Check</text>
+        <text x="360" y="198" fill="#fbbf24" font-size="9" text-anchor="middle">→ ALLOW / BLOCK_*</text>
+
+        <!-- ===================================================================
+             LOSS FUNCTION BOX
+             =================================================================== -->
+        <rect x="40" y="220" width="350" height="160" rx="8" fill="rgba(30, 41, 59, 0.5)" stroke="#334155" stroke-width="1.5"/>
+        <text x="215" y="45" fill="white" font-size="12" font-weight="600" text-anchor="middle">SAE Loss Function</text>
+        <text x="215" y="70" fill="#94a3b8" font-size="9" text-anchor="middle">ℒ = (1 - cos(x, x̂)) + λ₁‖z‖₁ + α·H(p)</text>
+        <text x="215" y="90" fill="#94a3b8" font-size="9" text-anchor="middle">Reconstruction    Sparsity    Monosemanticity</text>
+        <text x="215" y="110" fill="#94a3b8" font-size="9" text-anchor="middle">1 - cos(x, x̂)    λ₁‖z‖₁       α·H(p)</text>
+        <text x="215" y="130" fill="#94a3b8" font-size="8" text-anchor="middle">cos(x, x̂) = (x·x̂)/(‖x‖‖x̂‖)</text>
+        <text x="215" y="142" fill="#94a3b8" font-size="8" text-anchor="middle">H(p) = -Σ pᵢ log pᵢ  (Shannon entropy)</text>
+        <text x="215" y="154" fill="#94a3b8" font-size="8" text-anchor="middle">p = softmax(MLP(z)) ∈ Δ⁸</text>
+        <text x="215" y="166" fill="#94a3b8" font-size="8" text-anchor="middle">α=0.5, λ₁=1e-3, lr=1e-3 (Adam)</text>
+
+        <!-- TRAINING DETAILS -->
+        <rect x="420" y="220" width="300" height="160" rx="8" fill="rgba(120, 53, 15, 0.2)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="420" y="45" fill="#fbbf24" font-size="12" font-weight="600" text-anchor="middle">Online Training</text>
+        <text x="175" y="70" fill="#94a3b8" font-size="9" text-anchor="middle">• Single-example SGD per memory</text>
+        <text x="175" y="84" fill="#94a3b8" font-size="9" text-anchor="middle">• Adam optimizer (lr=1e-3)</text>
+        <text x="175" y="98" fill="#94a3b8" font-size="9" text-anchor="middle">• SBERT frozen (no gradients)</text>
+        <text x="175" y="112" fill="#94a3b8" font-size="9" text-anchor="middle">• Only SAE params updated</text>
+        <text x="175" y="126" fill="#94a3b8" font-size="9" text-anchor="middle">• EMA of weights for stability</text>
+        <text x="175" y="140" fill="#94a3b8" font-size="9" text-anchor="middle">• SAE_CONFIG.seed=42 (deterministic)</text>
+        <text x="175" y="154" fill="#fbbf24" font-size="8" text-anchor="middle">MEMORYOPS_WORKERS_REFLECTION_SAE=true</text>
+
+        <!-- ATOM EXAMPLE -->
+        <rect x="40" y="400" width="680" height="140" rx="8" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="380" y="420" fill="#a78bfa" font-size="12" font-weight="600" text-anchor="middle">Atom Example: "User configures Redis for production UAT at Easyrewardz"</text>
+        <text x="380" y="440" fill="#94a3b8" font-size="9" text-anchor="middle">Source Memory (Polysemantic): "User configures Redis cache instances for production UAT environment at Easyrewardz."</text>
+        <text x="380" y="460" fill="#94a3b8" font-size="9" text-anchor="middle">⬇ SAE (λ=1e-3, k=5) ⬇</text>
+        
+        <!-- Atom boxes -->
+        <rect x="60" y="480" width="120" height="50" rx="4" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="120" y="498" fill="#22d3ee" font-size="8" font-weight="600" text-anchor="middle">a₁: Redis cache</text>
+        <text x="120" y="512" fill="#94a3b8" font-size="7" text-anchor="middle">type=semantic, p(type)≈0.95</text>
+        
+        <rect x="195" y="480" width="120" height="50" rx="4" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="255" y="498" fill="#22d3ee" font-size="8" font-weight="600" text-anchor="middle">a₂: production</text>
+        <text x="255" y="512" fill="#94a3b8" font-size="7" text-anchor="middle">type=semantic, p(type)≈0.92</text>
+        
+        <rect x="330" y="480" width="120" height="50" rx="4" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="390" y="498" fill="#22d3ee" font-size="8" font-weight="600" text-anchor="middle">a₃: UAT environment</text>
+        <text x="390" y="512" fill="#94a3b8" font-size="7" text-anchor="middle">type=semantic, p(type)≈0.90</text>
+        
+        <rect x="465" y="480" width="120" height="50" rx="4" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="525" y="498" fill="#fb7185" font-size="8" font-weight="600" text-anchor="middle">a₄: Easyrewardz</text>
+        <text x="525" y="512" fill="#94a3b8" font-size="7" text-anchor="middle">type=semantic, p(type)≈0.98</text>
+        <text x="525" y="524" fill="#fb7185" font-size="7" text-anchor="middle">★ Legal Hold ★</text>
+        
+        <rect x="600" y="480" width="110" height="50" rx="4" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="655" y="498" fill="#34d399" font-size="8" font-weight="600" text-anchor="middle">a₅: configures</text>
+        <text x="655" y="512" fill="#94a3b8" font-size="7" text-anchor="middle">type=procedural</text>
+
+        <!-- MONOSEMANTICITY SCORE -->
+        <rect x="730" y="400" width="180" height="140" rx="8" fill="rgba(120, 53, 15, 0.2)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="420" y="420" fill="#fbbf24" font-size="12" font-weight="600" text-anchor="middle">Monosemanticity</text>
+        <text x="420" y="440" fill="#94a3b8" font-size="9" text-anchor="middle">Baseline (polysemantic):</text>
+        <text x="420" y="455" fill="#fb7185" font-size="18" font-weight="600" text-anchor="middle">0.31</text>
+        <text x="420" y="480" fill="#94a3b8" font-size="9" text-anchor="middle">SAE (λ=1e-3, k=5):</text>
+        <text x="420" y="495" fill="#34d399" font-size="18" font-weight="600" text-anchor="middle">0.78</text>
+        <text x="420" y="515" fill="#34d399" font-size="9" text-anchor="middle">+152% improvement</text>
+        <text x="420" y="530" fill="#94a3b8" font-size="7" text-anchor="middle">MonoScore = 1 - mean(H(p))</text>
+
+        <!-- ===================================================================
+             ARROWS
+             =================================================================== -->
+        <!-- 1→2 -->
+        <line x1="300" y1="80" x2="458" y2="80" stroke="#fb7185" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="365" y="75" fill="#fb7185" font-size="9" text-anchor="middle" font-weight="600">SBERT</text>
+        
+        <!-- 2→3 -->
+        <line x1="660" y1="90" x2="808" y2="90" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="720" y="85" fill="#22d3ee" font-size="9" text-anchor="middle" font-weight="600">z = Enc(x)</text>
+
+        <!-- 3→4 -->
+        <line x1="1030" y1="90" x2="1188" y2="90" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="1095" y="85" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="600">x̂ = Dec(z)</text>
+
+        <!-- 4→5 -->
+        <line x1="1410" y1="90" x2="1568" y2="90" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="1480" y="85" fill="#a78bfa" font-size="9" text-anchor="middle" font-weight="600">Store Atoms</text>
+
+        <!-- 5→6 -->
+        <line x1="1810" y1="110" x2="1968" y2="110" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="1875" y="105" fill="#a78bfa" font-size="9" text-anchor="middle" font-weight="600">Admit/Block</text>
+
+        <!-- Loss arrows -->
+        <line x1="215" y1="200" x2="215" y2="220" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead-amber)"/>
+        <text x="200" y="210" fill="#fbbf24" font-size="8" text-anchor="middle">L₁</text>
+        
+        <line x1="215" y1="200" x2="420" y2="220" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead-amber)"/>
+        <text x="320" y="210" fill="#fbbf24" font-size="8" text-anchor="middle">L₁ + H(p)</text>
+
+        <!-- Background path -->
+        <line x1="180" y1="550" x2="180" y2="180" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-amber)"/>
+        <text x="160" y="360" fill="#fbbf24" font-size="8" text-anchor="middle">SAE Atoms</text>
+
+        <line x1="440" y1="400" x2="440" y2="190" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-amber)"/>
+        <text x="420" y="290" fill="#fbbf24" font-size="8" text-anchor="middle">BG Workers</text>
+
+        <line x1="700" y1="400" x2="700" y2="190" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-amber)"/>
+        <text x="680" y="290" fill="#fbbf24" font-size="8" text-anchor="middle">Compaction</text>
+
+        <line x1="1190" y1="400" x2="1190" y2="190" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-dashed)"/>
+        <text x="1090" y="290" fill="#fb7185" font-size="8" text-anchor="middle">Gov State</text>
+
+        <line x1="920" y1="80" x2="1100" y2="550" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5"/>
+        <text x="1010" y="315" fill="#fb7185" font-size="8" text-anchor="middle">Gov State</text>
+
+        <!-- ===================================================================
+             LEGEND
+             =================================================================== -->
+        <text x="1080" y="40" fill="white" font-size="11" font-weight="600">Legend</text>
+        
+        <rect x="1080" y="52" width="18" height="12" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1075" y="62" fill="#94a3b8" font-size="8">Raw Memory Input</text>
+        
+        <rect x="1080" y="70" width="18" height="12" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="1075" y="80" fill="#94a3b8" font-size="8">SBERT / Embedder</text>
+        
+        <rect x="1080" y="88" width="18" height="12" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="1075" y="98" fill="#94a3b8" font-size="8">SAE (Encoder/Decoder)</text>
+        
+        <rect x="1080" y="106" width="18" height="12" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="1075" y="116" fill="#94a3b8" font-size="8">Atoms / Memory Store</text>
+        
+        <rect x="1080" y="124" width="18" height="12" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="1075" y="140" fill="#94a3b8" font-size="8">Admission Gate</text>
+        
+        <rect x="1080" y="142" width="18" height="12" rx="2" fill="rgba(120, 53, 15, 0.2)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="1075" y="154" fill="#94a3b8" font-size="8">Background Workers</text>
+        
+        <rect x="1080" y="160" width="18" height="12" rx="2" fill="rgba(136, 19, 55, 0.3)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1075" y="170" fill="#94a3b8" font-size="8">Governance / Security</text>
+        
+        <line x1="1080" y1="178" x2="1098" y2="178" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5"/>
+        <text x="1075" y="182" fill="#94a3b8" font-size="8">Auth / Legal Flow</text>
+        
+        <line x1="1080" y1="188" x2="1098" y2="188" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="1075" y="194" fill="#94a3b8" font-size="8">Background Flow</text>
+        
+        <line x1="1080" y1="206" x2="1098" y2="206" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5"/>
+        <text x="1075" y="210" fill="#fbbf24" font-size="8">SAE Atoms Flow</text>
+
+        <!-- Path Labels -->
+        <text x="40" y="30" fill="#fb7185" font-size="10" font-weight="600">1. INPUT</text>
+        <text x="460" y="20" fill="#22d3ee" font-size="10" font-weight="600">2. EMBED</text>
+        <text x="810" y="20" fill="#fbbf24" font-size="10" font-weight="600">3. SAE ENCODE</text>
+        <text x="1190" y="20" fill="#a78bfa" font-size="10" font-weight="600">4. DECODE & ATOMIZE</text>
+        <text x="1570" y="20" fill="#a78bfa" font-size="10" font-weight="600">5. STORE ATOMS</text>
+        <text x="1970" y="20" fill="#fbbf24" font-size="10" font-weight="600">6. ADMIT / BLOCK</text>
+        <text x="40" y="210" fill="#fbbf24" font-size="10" font-weight="600">TRAINING</text>
+        <text x="40" y="390" fill="#a78bfa" font-size="10" font-weight="600">ATOM EXAMPLE</text>
+
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>SAE Architecture</h3>
+        </div>
+        <ul>
+          <li>• Embedder: Frozen SBERT (all-MiniLM-L6-v2, 384-dim)</li>
+          <li>• Encoder: Linear(384→128) + ReLU</li>
+          <li>• Decoder: Linear(128→384, no bias)</li>
+          <li>• Monosemanticity Probe: 2-layer MLP(128→64→9)</li>
+          <li>• Loss: Recon + λ₁‖z‖₁ + α·H(p)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>Atom Properties</h3>
+        </div>
+        <ul>
+          <li>• is_atom = true (admission gate evaluates)</li>
+          <li>• sae_embedding ∈ ℝ³⁸⁴ (decoder column × zᵢ)</li>
+          <li>• origin_memory_id (traceability)</li>
+          <li>• atom_latent_dim = i (which latent dim)</li>
+          <li>• atom_type_logits = p(type|atom)</li>
+          <li>• approx_text = "<atom_dim_i>"</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot violet"></div>
+          <h3>Monosemanticity</h3>
+        </div>
+        <ul>
+          <li>• Baseline polysemantic memory: 0.31</li>
+          <li>• SAE atoms (λ=1e-3, k=5): 0.78 (+152%)</li>
+          <li>• Each atom → single memory-type</li>
+          <li>• Probe entropy H(p) minimized</li>
+          <li>• Inherits governance from source</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>Admission Gate (Per-Atom)</h3>
+        </div>
+        <ul>
+          <li>• Tenant/User scope check</li>
+          <li>• Status = Active required</li>
+          <li>• Consent = Granted</li>
+          <li>• Retention window active</li>
+          <li>• Sensitivity gate (opt-in)</li>
+          <li>• Score ≥ threshold (opt-in)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>Governance Outcomes</h3>
+        </div>
+        <ul>
+          <li>• Consent withdrawal → 1 atom blocked</li>
+          <li>• Legal hold → 1 atom blocked</li>
+          <li>• Retention expiry → 1 atom blocked</li>
+          <li>• Other atoms remain ALLOW</li>
+          <li>• 42% over-blocking reduction</li>
+          <li>• Trace shows per-atom verdict</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>Results (λ=1e-3, k=5)</h3>
+        </div>
+        <ul>
+          <li>• MRR@10: 0.750 → 0.750 (0.0% drop)</li>
+          <li>• Monosemanticity: 0.31 → 0.78 (+152%)</li>
+          <li>• AvgTraceLen: 4.0 → 5.0</li>
+          <li>• GovFieldFill%: 50% (atoms inherit gov)</li>
+          <li>• AnswerAcc%: 25% (preserved)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">
+      MemoryOps-AI • Prompt Shaving & Monosemantic Disentanglement • ADR-018
+    </div>
+  </div>
+</body>
+</html>

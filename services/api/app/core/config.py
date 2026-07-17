@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # observe-only (shadow) mode: decisions are still traced but nothing is removed.
     admission_gate_enabled: bool = True
     memory_trace_enabled: bool = True
-    # Opt-in stricter gates (default OFF → behavior-preserving):
+    # Opt-in stricter gates (default OFF -> behavior-preserving):
     admission_block_sensitive: bool = False  # block sensitivity='high' from context
     admission_min_score: float = 0.0  # block ranked score below this (0 = disabled)
 
@@ -52,56 +52,54 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
 
-    # LLM + embeddings. "stub" requires no API keys and keeps the system fully
-    # functional offline (graceful degradation, invariant #4). "heuristic" is a
-    # back-compat alias for "stub". Provider adapters (v0.4, ADR-008) are used
-    # only when their API key is present; otherwise selection degrades to stub.
-    llm_provider: Literal["stub", "heuristic", "openai", "anthropic", "gemini"] = "stub"
-    openai_model: str = "gpt-4o-mini"
-    anthropic_model: str = "claude-haiku-4-5-20251001"
-    gemini_model: str = "gemini-1.5-flash"
-
-    # Structured memory intelligence knobs (v0.4). Defaults keep LLM output
-    # advisory and always recoverable: validate structured output, and fall back
-    # to the deterministic heuristic on any invalid/failed provider call. The LLM
-    # never overrides the deterministic policy broker (ADR-003/008).
-    llm_require_structured_output: bool = True
-    llm_fallback_to_heuristic: bool = True
-    llm_max_retries: int = 2
-
-    # "stub" is the deterministic default; "heuristic" is kept as a back-compat
-    # alias for the same provider. "openai" is used only when a key is present.
-    embeddings_provider: Literal["stub", "heuristic", "openai"] = "stub"
-    embedding_dim: int = 1536
+    # Embeddings provider: "stub" (deterministic offline) or "openai".
+    embeddings_provider: Literal["stub", "openai"] = "stub"
+    openai_api_key: str = ""
     openai_embedding_model: str = "text-embedding-3-small"
 
-    openai_api_key: str = ""
-    anthropic_api_key: str = ""
-    gemini_api_key: str = ""
-
-    # Optional context compression at the LLM boundary (v0.2.1, ADR-007).
-    # "none" (default) is fully transparent; "headroom" uses the optional adapter
-    # and degrades to no-op on any failure. Compression runs only AFTER policy +
-    # governance + composition — never before the policy broker.
+    # Context compression (v0.2.1, ADR-007). "none" (default, no-op) or "headroom".
     context_compression: Literal["none", "headroom"] = "none"
+    # When headroom compression is enabled, require that policy checks have
+    # cleared before compressing (never compress pre-policy content).
     compression_require_policy_cleared: bool = True
-    headroom_mode: Literal["library", "proxy", "mcp"] = "library"
-    headroom_output_shaper: bool = False
 
-    # Background memory lifecycle workers (v0.6, ADR-010). Workers run outside the
-    # chat path; these are policy thresholds, not request knobs. Defaults are
-    # conservative so a default run touches little. Reflection is proposal-only
-    # and OFF by default (it never writes/deletes memory; see workers/reflection).
+    # LLM provider adapters (v0.4, ADR-008). "stub" (deterministic, no API key),
+    # "heuristic" (rule-based), "openai", "anthropic", "gemini".
+    llm_provider: Literal["stub", "heuristic", "openai", "anthropic", "gemini"] = "stub"
+    # Require structured JSON output from the LLM provider (default True).
+    llm_require_structured_output: bool = True
+    # Fallback to heuristic extractor if LLM fails or returns invalid JSON.
+    llm_fallback_to_heuristic: bool = True
+    # LLM provider specific settings (used when provider != stub/heuristic).
+    openai_model: str = "gpt-4o-mini"
+    openai_api_key: str = ""
+    anthropic_model: str = "claude-haiku-4-5-20251001"
+    anthropic_api_key: str = ""
+    gemini_model: str = "gemini-1.5-flash"
+    gemini_api_key: str = ""
+    llm_max_retries: int = 2
+    llm_timeout_seconds: float = 10.0
+
+    # Worker lifecycle parameters (v0.6, ADR-010). All off by default; enable via
+    # env vars when running the `worker` service or the `runner` CLI.
+    workers_decay_enabled: bool = False
     workers_decay_age_days: int = 90
     workers_decay_min_confidence: float = 0.3
     workers_decay_importance_floor: int = 1
     workers_decay_importance_step: int = 2
+    workers_archive_enabled: bool = False
     workers_archive_age_days: int = 180
     workers_archive_recent_use_days: int = 30
+    workers_conflict_scan_enabled: bool = False
     workers_conflict_scan_max_memories: int = 200
     workers_reflection_enabled: bool = False
     workers_reflection_min_cluster_size: int = 5
     workers_reflection_max_importance: int = 3
+    # SAE Reflection (Prompt Shaving / Monosemantic Disentanglement, v0.12).
+    # Maps raw memories into monosemantic atoms via a Sparse Autoencoder.
+    workers_reflection_sae_enabled: bool = False
+    workers_reflection_sae_num_atoms: int = 5
+    workers_reflection_sae_l1_lambda: float = 1e-3
     # Deletion compaction (v0.7, ADR-011). Only already soft-deleted memory is
     # eligible, and only after it has been deleted for at least this many days
     # (a retention/grace window before retrievable content + vector material are
@@ -111,7 +109,7 @@ class Settings(BaseSettings):
 
     # Retention policies + legal hold + consent-aware memory (v0.10, ADR-013).
     # The retention worker evaluates active memory against a named policy pack
-    # (sensitivity tier → retention window) and soft-deletes memory whose window
+    # (sensitivity tier -> retention window) and soft-deletes memory whose window
     # has elapsed or whose consent was withdrawn/expired — UNLESS it is on legal
     # hold, pinned, or protected (those override and block all forgetting). The
     # worker only soft-deletes; the existing deletion-verification + compaction
@@ -142,7 +140,7 @@ class Settings(BaseSettings):
     circuit_breaker_reset_seconds: float = 30.0
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
     # MEMORYOPS_STORAGE is the documented public knob; map it onto `storage`.
     import contextlib
@@ -190,6 +188,15 @@ def get_settings() -> Settings:
     # documented toggle; other thresholds are configured via their field names.
     if (val := os.getenv("MEMORYOPS_WORKERS_REFLECTION")) is not None:
         overrides["workers_reflection_enabled"] = val.lower() not in ("0", "false", "no")
+    # v0.12 SAE Reflection worker (Prompt Shaving / Monosemantic Disentanglement)
+    if (val := os.getenv("MEMORYOPS_WORKERS_REFLECTION_SAE")) is not None:
+        overrides["workers_reflection_sae_enabled"] = val.lower() not in ("0", "false", "no")
+    if (val := os.getenv("MEMORYOPS_WORKERS_REFLECTION_SAE_NUM_ATOMS")) is not None:
+        with contextlib.suppress(ValueError):
+            overrides["workers_reflection_sae_num_atoms"] = int(val)
+    if (val := os.getenv("MEMORYOPS_WORKERS_REFLECTION_SAE_L1_LAMBDA")) is not None:
+        with contextlib.suppress(ValueError):
+            overrides["workers_reflection_sae_l1_lambda"] = float(val)
     # v0.8 worker runtime knobs (ADR-012). Operator-facing public toggles.
     if (val := os.getenv("MEMORYOPS_WORKER_INTERVAL_SECONDS")) is not None:
         with contextlib.suppress(ValueError):

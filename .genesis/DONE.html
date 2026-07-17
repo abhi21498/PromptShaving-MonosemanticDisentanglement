@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MemoryOps-AI — Definition of Done</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1, h2, h3 { color: #1a1a2e; }
+    .section { margin-bottom: 2rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
+    .gate { margin: 0.5rem 0; padding: 0.5rem; background: white; border-left: 4px solid #2563eb; }
+    .gate.pass { border-left-color: #16a34a; }
+    .gate.fail { border-left-color: #dc2626; }
+    .milestone { margin: 0.5rem 0; padding: 0.5rem; background: white; border-left: 4px solid #7c3aed; }
+    code { background: #f1f1f1; padding: 0.1rem 0.3rem; border-radius: 3px; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
+    th { background: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <h1>MemoryOps-AI — Definition of Done (DONE.html)</h1>
+  <p><strong>Project:</strong> MemoryOps-AI Research & Paper (Governance-Aware Memory Usage Trace + Prompt Shaving / Monosemantic Disentanglement)</p>
+  <p><strong>Locked:</strong> This file is locked after genesis. Scope changes require user approval — not silent edits by the maker.</p>
+
+  <div class="section">
+    <h2>Section 1 — Cognitive Job (G0)</h2>
+    <div class="gate">
+      <strong>What are we building?</strong> A research-grade extension to MemoryOps-AI that (a) hardens the governance-aware Memory Usage Trace (ADR-017) with full governance field propagation, (b) implements a Sparse Autoencoder (SAE) based Reflection Worker that performs "Prompt Shaving" — mapping raw memories to monosemantic text atoms — and (c) produces a conference-ready paper with empirical validation of the granularity trade-off (retrieval quality vs. governance precision).
+    </div>
+    <div class="gate">
+      <strong>AI components?</strong> Yes — SAE encoder/decoder (PyTorch), frozen SBERT embedder, optional LLM-based atom decoder, heuristic fallback. All behind feature flags.
+    </div>
+    <div class="gate">
+      <strong>Distributed system?</strong> Yes — API (FastAPI), Worker (background loops), Postgres+pgvector, Redis. Railway deployment (5 services).
+    </div>
+    <div class="gate">
+      <strong>Trust boundary?</strong> Multi-tenant SaaS. Tenant isolation (RLS), consent/retention/legal-hold governance, audit trail. No cross-tenant data flow.
+    </div>
+    <div class="gate">
+      <strong>Current phase?</strong> Requirements → Design → Implementation → Verification (G0→G6). We are at G0 (cognitive design complete) moving into G1 (scaffold) → G2 (graph) → G3 (wiki) → G4 (done) → G5 (plan) → G6 (prime & run).
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Section 2 — Phase Gates (from agentic-swe-kit map)</h2>
+    <p>Each gate is binary. A separate verifier (not the maker) checks at L4 VERIFY.</p>
+
+    <h3>Phase 0 — Cognitive Design</h3>
+    <div class="gate">✅ Problem framed: Governance explainability + memory atomization trade-off</div>
+    <div class="gate">✅ Success criteria defined (MRR@10 drop <2%, monosemanticity ↑, governance field fill-rate ↑)</div>
+    <div class="gate">✅ Risks identified: SAE training stability, index noise from atom proliferation, decoder quality</div>
+
+    <h3>Phase 1 — System Architecture</h3>
+    <div class="gate">✅ ADR-017 (Context Admission Gate) already implemented & tested</div>
+    <div class="gate">✅ ADR-010/011/012 (Worker runtime) already implemented & tested</div>
+    <div class="gate">✅ SAE reflection worker design documented (new ADR-018 to be created)</div>
+    <div class="gate">✅ Data flow: Raw memory → SBERT embed → SAE encode → Top-k atoms → Decode/Store → Retrieval/Ranker/Admission</div>
+
+    <h3>Phase 4 — Workflow Orchestration</h3>
+    <div class="gate">✅ Worker runtime (orchestrator, scheduler, locks, retry) operational</div>
+    <div class="gate">✅ New SAE reflection worker integrates with existing runner (--job reflection_sae)</div>
+    <div class="gate">✅ Feature flag: MEMORYOPS_REFLECTION_SAE=true|false</div>
+
+    <h3>Phase 5 — LLM Reasoning</h3>
+    <div class="gate">✅ Provider-neutral LLM layer (stub/openai/anthropic/gemini) exists</div>
+    <div class="gate">✅ SAE uses frozen SBERT (no API key needed for core experiment)</div>
+    <div class="gate">✅ Optional LLM decoder for atom→text behind MEMORYOPS_SAE_DECODER_PROVIDER</div>
+
+    <h3>Phase 6 — Memory Architecture</h3>
+    <div class="gate">✅ Typed memory model (9 types) + governance metadata (legal_hold, pinned, protected, retention, consent)</div>
+    <div class="gate">✅ Atom storage as MemoryRecord with is_atom=true + sae_embedding in metadata</div>
+    <div class="gate">✅ Admission gate already evaluates per-atom governance (legal_hold, consent, retention)</div>
+
+    <h3>Phase 9 — Evaluation</h3>
+    <div class="gate">✅ Golden + adversarial eval harness exists (evals/run_evals.py)</div>
+    <div class="gate">✅ New metrics: MRR@10, AvgTraceLen, GovFieldFill%, AnswerAcc%, MonosemanticityScore</div>
+    <div class="gate">✅ Ablation grid: λ ∈ {5e-4, 1e-3, 2e-3}, atoms ∈ {3,5,7}, decoder ∈ {none, template, llm}</div>
+
+    <h3>Phase 10 — Observability</h3>
+    <div class="gate">✅ Prometheus metrics exposed (ADR-015)</div>
+    <div class="gate">✅ Trace includes governance fields (already done)</div>
+    <div class="gate">✅ Worker health at /healthz/workers (already done)</div>
+
+    <h3>Phase 11 — Security</h3>
+    <div class="gate">✅ RLS FORCE + tenant policy (migration 004)</div>
+    <div class="gate">✅ Secret/PII detection in policy broker (blocks before storage)</div>
+    <div class="gate">✅ Atom-level governance: legal hold on single atom without blocking whole memory</div>
+
+    <h3>Phase 12 — Reliability</h3>
+    <div class="gate">✅ Worker leases prevent duplicate runs</div>
+    <div class="gate">✅ Retry/backoff + dead-letter on exhausted retries</div>
+    <div class="gate">✅ SAE worker idempotent (re-running on same memory produces same atoms)</div>
+
+    <h3>Phase 13 — Infrastructure</h3>
+    <div class="gate">✅ Railway-only deployment (5 services, config-as-code in railway/)</div>
+    <div class="gate">✅ Smoke test script (scripts/railway_smoke_test.py)</div>
+
+    <h3>Phase 15 — Governance</h3>
+    <div class="gate">✅ Control plane: /memories, /memories/[id], /governance, /audit</div>
+    <div class="gate">✅ Per-memory provenance + audit timeline</div>
+    <div class="gate">✅ New: atom-level governance visibility in trace</div>
+
+    <h3>Phase 18 — CI/CD for AI</h3>
+    <div class="gate">✅ PR Invariant Evidence Gate (scripts/pr_invariant_gate.py + .github/workflows/pr-invariant-evidence-gate.yml)</div>
+    <div class="gate">✅ Deterministic — no LLM calls in gate</div>
+    <div class="gate">✅ Fails when memory/policy/retrieval/deletion/security/migrations/API-contract changes lack test/eval/doc/ADR evidence</div>
+
+    <h3>Phase 20 — Continuous Learning</h3>
+    <div class="gate">✅ Reflection worker (proposal-only) exists</div>
+    <div class="gate">✅ New: SAE reflection worker produces atoms as learning candidates</div>
+    <div class="gate">✅ Eval harness captures learning signal (monosemanticity, retrieval delta)</div>
+  </div>
+
+  <div class="section">
+    <h2>Section 3 — Milestones (PLAN.md mirror)</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Outcome</th><th>Demo Command</th><th>Freeze Boundary</th><th>Assigned Skills</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>M1</td>
+          <td>SAE Reflection Worker scaffolded & unit-tested</td>
+          <td><code>cd services/api && python -m pytest tests/test_sae_reflection.py -v</code></td>
+          <td>Code compiles, imports resolve, single-example forward pass works</td>
+          <td>genesis, blueprint, verify</td>
+        </tr>
+        <tr>
+          <td>M2</td>
+          <td>SAE worker integrated into runner (--job reflection_sae) with feature flag</td>
+          <td><code>cd services/api && python -m app.workers.runner --tenant t1 --user u1 --job reflection_sae</code></td>
+          <td>Worker runs without error, produces atoms stored with is_atom=true</td>
+          <td>genesis, verify</td>
+        </tr>
+        <tr>
+          <td>M3</td>
+          <td>Evaluation harness extended with SAE metrics (MRR@10, monosemanticity, gov fill-rate)</td>
+          <td><code>cd evals && python run_sae_eval.py --lambda 1e-3 --num-atoms 5</code></td>
+          <td>Script runs baseline + SAE conditions, outputs comparison table</td>
+          <td>genesis, verify, scout</td>
+        </tr>
+        <tr>
+          <td>M4</td>
+          <td>Ablation sweep completed & results logged (λ, num_atoms, decoder)</td>
+          <td><code>cd evals && python run_ablation.py</code></td>
+          <td>CSV/JSON with all combos; best config identified</td>
+          <td>verify, scout</td>
+        </tr>
+        <tr>
+          <td>M5</td>
+          <td>ADR-018 (SAE Reflection Worker) written & linked</td>
+          <td><code>cat infra/adr/ADR-018-sae-reflection-worker.md</code></td>
+          <td>ADR follows project template, references M1-M4 evidence</td>
+          <td>genesis, blueprint</td>
+        </tr>
+        <tr>
+          <td>M6</td>
+          <td>Paper draft v1 (Intro, Related Work, Method, Experiments, Discussion)</td>
+          <td><code>ls paper/draft-v1.pdf</code></td>
+          <td>PDF compiles; all figures generated from eval data</td>
+          <td>genesis, humanizer</td>
+        </tr>
+        <tr>
+          <td>M7</td>
+          <td>Paper submission package (camera-ready + supplement + code release)</td>
+          <td><code>ls paper/submission.zip</code></td>
+          <td>Meets venue formatting; reproducibility checklist complete</td>
+          <td>humanizer, verify</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Section 4 — Verification Protocol (L4 VERIFY)</h2>
+    <ol>
+      <li><strong>Separate context:</strong> Verifier runs in a fresh session (no maker state).</li>
+      <li><strong>Gate checklist:</strong> For each milestone, verifier runs the demo command and checks:
+        <ul>
+          <li>Exit code == 0</li>
+          <li>Output matches expected artifact (file exists, metric threshold met)</li>
+          <li>No new test failures introduced (full test suite passes)</li>
+          <li>ADR/doc updates present for any invariant-relevant changes</li>
+        </ul>
+      </li>
+      <li><strong>Binary verdict:</strong> PASS / FAIL recorded in CURRENT.md. No partial credit.</li>
+      <li><strong>Escalation:</strong> On FAIL, maker gets specific reproduction steps; scope does not expand silently.</li>
+    </ol>
+  </div>
+
+  <hr>
+  <p><em>DONE.html locked at genesis. To modify scope, ask the user — they update this file.</em></p>
+</body>
+</html>

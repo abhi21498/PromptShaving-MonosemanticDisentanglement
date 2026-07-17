@@ -1,0 +1,144 @@
+{
+  "baseline": {
+    "MRR@10": 0.75,
+    "AvgTraceLen": 4.0,
+    "GovFieldFill%": 50.0,
+    "AnswerAcc%": 25.0
+  },
+  "sae": {
+    "MRR@10": 0.75,
+    "AvgTraceLen": 5.0,
+    "GovFieldFill%": 50.0,
+    "AnswerAcc%": 25.0
+  },
+  "ablation": [
+    {
+      "lambda": 0.0005,
+      "num_atoms": 3,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.0005,
+      "num_atoms": 5,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.0005,
+      "num_atoms": 7,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.0005,
+      "num_atoms": 10,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.001,
+      "num_atoms": 3,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.001,
+      "num_atoms": 5,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.001,
+      "num_atoms": 7,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.001,
+      "num_atoms": 10,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.002,
+      "num_atoms": 3,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.002,
+      "num_atoms": 5,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.002,
+      "num_atoms": 7,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.002,
+      "num_atoms": 10,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.005,
+      "num_atoms": 3,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.005,
+      "num_atoms": 5,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.005,
+      "num_atoms": 7,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    },
+    {
+      "lambda": 0.005,
+      "num_atoms": 10,
+      "MRR@10": 0.75,
+      "AvgTraceLen": 5.0,
+      "GovFieldFill%": 50.0,
+      "AnswerAcc%": 25.0
+    }
+  ]
+}

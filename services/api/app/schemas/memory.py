@@ -108,6 +108,7 @@ class MemoryTraceEntry(BaseModel):
 
     Content is surfaced as a short preview only; the caller already owns the
     tenant scope (same trust boundary as ``used_memories``).
+    Includes governance details to explain why the memory was allowed or blocked.
     """
 
     memory_id: str
@@ -119,6 +120,13 @@ class MemoryTraceEntry(BaseModel):
     sensitivity: Sensitivity
     consent_status: str
     retention_status: str  # active | expired | exempt | none
+    # Governance details
+    legal_hold: bool
+    legal_hold_reason: str | None
+    pinned: bool
+    protected: bool
+    retention_policy: str | None
+    retention_expires_at: datetime | None
     admission_decision: str  # ALLOW | BLOCK_*
     admission_reason: str
     retrieval_score: float
